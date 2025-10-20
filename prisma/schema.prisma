@@ -1,0 +1,122 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Mahasiswa {
+  id        String    @id @default(uuid())
+  nim       String    @unique
+  nama      String
+  email     String?
+  password  String
+  jurusan   String?
+  laporan   Laporan[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Laporan {
+  id     String        @id @default(uuid())
+  judul  String
+  isi    String
+  status StatusLaporan @default(PENDING)
+
+  mahasiswaId String
+  mahasiswa   Mahasiswa @relation(fields: [mahasiswaId], references: [id])
+
+  tindaklanjut String?
+
+  // Relasi ke admin yang menindaklanjuti laporan
+  ditindakOleh String?
+  adminTindak  admin?  @relation("AdminTindakLaporan", fields: [ditindakOleh], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum StatusLaporan {
+  PENDING
+  DIBACA
+  DITINDAKLANJUTI
+  SELESAI
+}
+
+model admin {
+  id             String              @id @default(uuid())
+  username       String              @unique
+  nama           String
+  role           RoleAdmin           @default(ADMIN)
+  password       String? // hanya head admin yang punya password
+  tokenAdmin     TokenAdmin[]        @relation("TokenOwner")
+  generatedToken TokenAdmin[]        @relation("TokenGenerator")
+  laporanTindak  Laporan[]           @relation("AdminTindakLaporan")
+  blog           Blog[]
+  portofolio     Portofolio[]
+  logAktivitas   LogAktivitasAdmin[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum RoleAdmin {
+  ADMIN
+  HEAD_ADMIN
+}
+
+model TokenAdmin {
+  id     String  @id @default(uuid())
+  token  String  @unique
+  isUsed Boolean @default(false)
+
+  adminId String?
+  admin   admin?  @relation("TokenOwner", fields: [adminId], references: [id])
+
+  generatedBy String?
+  headAdmin   admin?  @relation("TokenGenerator", fields: [generatedBy], references: [id])
+
+  logAktivitas LogAktivitasAdmin[] @relation("TokenActivity")
+
+  expiredAt   DateTime?
+  isPermanent Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  usedAt      DateTime?
+}
+
+model Blog {
+  id        String   @id @default(uuid())
+  judul     String
+  isi       String
+  gambar    String?
+  penulisId String
+  penulis   admin    @relation(fields: [penulisId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Portofolio {
+  id        String   @id @default(uuid())
+  judul     String
+  deskripsi String
+  gambar    String?
+  tanggal   DateTime
+  adminId   String
+  admin     admin    @relation(fields: [adminId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LogAktivitasAdmin {
+  id         String      @id @default(uuid())
+  adminId    String
+  admin      admin       @relation(fields: [adminId], references: [id])
+  tokenId    String?
+  token      TokenAdmin? @relation("TokenActivity", fields: [tokenId], references: [id])
+  waktuLogin DateTime    @default(now())
+  ipAddress  String?
+}
