@@ -3,10 +3,10 @@ import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    console.log('🧩 Prisma client:', prisma);
+    console.log('Prisma client:', prisma);
     const { username, token } = await req.json() as { username: string; token: string };
 
-    const admin = await prisma.admin.findUnique({
+    const admin = await prisma.Admin.findUnique({
       where: { username },
     });
 

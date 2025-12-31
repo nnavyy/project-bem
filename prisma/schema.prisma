@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -16,28 +14,97 @@ model Mahasiswa {
   email     String?
   password  String
   jurusan   String?
-  laporan   Laporan[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  laporan   Laporan[]
 }
 
 model Laporan {
-  id     String        @id @default(uuid())
-  judul  String
-  isi    String
-  status StatusLaporan @default(PENDING)
-
-  mahasiswaId String
-  mahasiswa   Mahasiswa @relation(fields: [mahasiswaId], references: [id])
-
+  id           String        @id @default(uuid())
+  judul        String
+  isi          String
+  status       StatusLaporan @default(PENDING)
+  mahasiswaId  String
   tindaklanjut String?
-
-  // Relasi ke admin yang menindaklanjuti laporan
   ditindakOleh String?
-  adminTindak  admin?  @relation("AdminTindakLaporan", fields: [ditindakOleh], references: [id])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  adminTindak  Admin?        @relation("AdminTindakLaporan", fields: [ditindakOleh], references: [id])
+  mahasiswa    Mahasiswa     @relation(fields: [mahasiswaId], references: [id])
+}
 
+model TokenAdmin {
+  id           String              @id @default(uuid())
+  token        String              @unique
+  isUsed       Boolean             @default(false)
+  adminId      String?
+  generatedBy  String?
+  expiredAt    DateTime?
+  isPermanent  Boolean             @default(false)
+  createdAt    DateTime            @default(now())
+  usedAt       DateTime?
+  logAktivitas LogAktivitasAdmin[] @relation("TokenActivity")
+  admin        Admin?              @relation("TokenOwner", fields: [adminId], references: [id])
+  headAdmin    Admin?              @relation("TokenGenerator", fields: [generatedBy], references: [id])
+}
+
+model Blog {
+  id        String   @id @default(uuid())
+  judul     String
+  isi       String
+  gambar    String?
+  penulisId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  penulis   Admin    @relation(fields: [penulisId], references: [id])
+}
+
+model Portofolio {
+  id          String    @id @default(uuid())
+  namaDivisi  String
+  deskripsi   String
+  fotoUtama   String?   // bisa jadi banner atau gambar utama divisi
+  tanggal     DateTime? @default(now())
+  adminId     String
+  admin       Admin     @relation(fields: [adminId], references: [id])
+  galeri      Galeri[]  // relasi ke anggota / foto divisi
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Galeri {
+  id            String     @id @default(uuid())
+  portofolioId  String
+  namaAnggota   String
+  jabatan       String?
+  foto          String?
+  portofolio    Portofolio @relation(fields: [portofolioId], references: [id], onDelete: Cascade)
+}
+
+model LogAktivitasAdmin {
+  id         String      @id @default(uuid())
+  adminId    String
+  tokenId    String?
+  waktuLogin DateTime    @default(now())
+  ipAddress  String?
+  admin      Admin       @relation(fields: [adminId], references: [id])
+  token      TokenAdmin? @relation("TokenActivity", fields: [tokenId], references: [id])
+}
+
+model Admin {
+  id             String              @id
+  username       String              @unique
+  nama           String
+  role           RoleAdmin           @default(ADMIN)
+  password       String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime
+  blog           Blog[]
+  laporanTindak  Laporan[]           @relation("AdminTindakLaporan")
+  logAktivitas   LogAktivitasAdmin[]
+  portofolio     Portofolio[]
+  tokenAdmin     TokenAdmin[]        @relation("TokenOwner")
+  generatedToken TokenAdmin[]        @relation("TokenGenerator")
 }
 
 enum StatusLaporan {
@@ -47,76 +114,7 @@ enum StatusLaporan {
   SELESAI
 }
 
-model admin {
-  id             String              @id @default(uuid())
-  username       String              @unique
-  nama           String
-  role           RoleAdmin           @default(ADMIN)
-  password       String? // hanya head admin yang punya password
-  tokenAdmin     TokenAdmin[]        @relation("TokenOwner")
-  generatedToken TokenAdmin[]        @relation("TokenGenerator")
-  laporanTindak  Laporan[]           @relation("AdminTindakLaporan")
-  blog           Blog[]
-  portofolio     Portofolio[]
-  logAktivitas   LogAktivitasAdmin[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 enum RoleAdmin {
   ADMIN
   HEAD_ADMIN
-}
-
-model TokenAdmin {
-  id     String  @id @default(uuid())
-  token  String  @unique
-  isUsed Boolean @default(false)
-
-  adminId String?
-  admin   admin?  @relation("TokenOwner", fields: [adminId], references: [id])
-
-  generatedBy String?
-  headAdmin   admin?  @relation("TokenGenerator", fields: [generatedBy], references: [id])
-
-  logAktivitas LogAktivitasAdmin[] @relation("TokenActivity")
-
-  expiredAt   DateTime?
-  isPermanent Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  usedAt      DateTime?
-}
-
-model Blog {
-  id        String   @id @default(uuid())
-  judul     String
-  isi       String
-  gambar    String?
-  penulisId String
-  penulis   admin    @relation(fields: [penulisId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Portofolio {
-  id        String   @id @default(uuid())
-  judul     String
-  deskripsi String
-  gambar    String?
-  tanggal   DateTime
-  adminId   String
-  admin     admin    @relation(fields: [adminId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model LogAktivitasAdmin {
-  id         String      @id @default(uuid())
-  adminId    String
-  admin      admin       @relation(fields: [adminId], references: [id])
-  tokenId    String?
-  token      TokenAdmin? @relation("TokenActivity", fields: [tokenId], references: [id])
-  waktuLogin DateTime    @default(now())
-  ipAddress  String?
 }

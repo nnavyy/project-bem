@@ -1,23 +1,38 @@
 import { NextResponse, NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma"; // pastiin export default di prisma.ts
 import { verifyToken } from "@/lib/auth";
 
-// ✅ GET semua blog (bisa diakses oleh semua user)
+// GET semua blog (bisa diakses oleh semua user)
 export async function GET() {
   try {
     const blogs = await prisma.blog.findMany({
-      include: { penulis: { select: { id: true, nama: true, role: true } } },
+      include: {
+        penulis: {
+          select: { id: true, nama: true, role: true },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(blogs);
+    // format biar cocok ditampilkan di dashboard kotak
+    const formatted = blogs.map((b) => ({
+      id: b.id,
+      judul: b.judul,
+      isi: b.isi,
+      gambar: b.gambar,
+      author: b.penulis?.nama || "BEM ITESA",
+      role: b.penulis?.role || "ADMIN",
+      createdAt: b.createdAt,
+    }));
+
+    return NextResponse.json(formatted);
   } catch (err) {
     console.error("Error GET /blog:", err);
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// ✅ POST buat blog baru (hanya ADMIN / HEAD_ADMIN)
+// POST buat blog baru (hanya ADMIN / HEAD_ADMIN)
 export async function POST(req: NextRequest) {
   try {
     const user = await verifyToken(req);
@@ -39,6 +54,9 @@ export async function POST(req: NextRequest) {
         gambar,
         penulisId: user.id,
       },
+      include: {
+        penulis: { select: { id: true, nama: true, role: true } },
+      },
     });
 
     return NextResponse.json(blog, { status: 201 });
@@ -48,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ✅ PUT untuk update blog (admin)
+// PUT untuk update blog (admin)
 export async function PUT(req: NextRequest) {
   try {
     const user = await verifyToken(req);
@@ -65,11 +83,7 @@ export async function PUT(req: NextRequest) {
 
     const blog = await prisma.blog.update({
       where: { id },
-      data: {
-        judul,
-        isi,
-        gambar,
-      },
+      data: { judul, isi, gambar },
     });
 
     return NextResponse.json(blog);
@@ -79,7 +93,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// ✅ DELETE blog
+// DELETE blog
 export async function DELETE(req: NextRequest) {
   try {
     const user = await verifyToken(req);
