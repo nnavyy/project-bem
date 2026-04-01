@@ -1,11 +1,20 @@
 import { NextResponse, NextRequest } from "next/server";
-import prisma from "@/lib/prisma"; // pastiin export default di prisma.ts
+import  prisma  from "@/lib/prisma"; // pastiin export default di prisma.ts
 import { verifyToken } from "@/lib/auth";
+import type { Blog } from "@prisma/client";
+
 
 // GET semua blog (bisa diakses oleh semua user)
 export async function GET() {
   try {
-    const blogs = await prisma.blog.findMany({
+    const blogs: (Blog & {
+  penulis: {
+    id: string;
+    nama: string;
+    role: string;
+  } | null;
+})[] = await prisma.blog.findMany({
+
       include: {
         penulis: {
           select: { id: true, nama: true, role: true },
@@ -14,7 +23,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // format biar cocok ditampilkan di dashboard kotak
+    // format dash
     const formatted = blogs.map((b) => ({
       id: b.id,
       judul: b.judul,
@@ -28,11 +37,14 @@ export async function GET() {
     return NextResponse.json(formatted);
   } catch (err) {
     console.error("Error GET /blog:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
-// POST buat blog baru (hanya ADMIN / HEAD_ADMIN)
+// POST buat blog baru (role ADMIN / HEAD_ADMIN)
 export async function POST(req: NextRequest) {
   try {
     const user = await verifyToken(req);
@@ -44,7 +56,10 @@ export async function POST(req: NextRequest) {
     const { judul, isi, gambar } = await req.json();
 
     if (!judul || !isi) {
-      return NextResponse.json({ message: "Judul dan isi wajib diisi" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Judul dan isi wajib diisi" },
+        { status: 400 }
+      );
     }
 
     const blog = await prisma.blog.create({
@@ -62,7 +77,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(blog, { status: 201 });
   } catch (err) {
     console.error("Error POST /blog:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -78,7 +96,10 @@ export async function PUT(req: NextRequest) {
     const { id, judul, isi, gambar } = await req.json();
 
     if (!id) {
-      return NextResponse.json({ message: "ID blog diperlukan" }, { status: 400 });
+      return NextResponse.json(
+        { message: "ID blog diperlukan" },
+        { status: 400 }
+      );
     }
 
     const blog = await prisma.blog.update({
@@ -89,7 +110,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(blog);
   } catch (err) {
     console.error("Error PUT /blog:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -105,7 +129,10 @@ export async function DELETE(req: NextRequest) {
     const { id } = await req.json();
 
     if (!id) {
-      return NextResponse.json({ message: "ID blog diperlukan" }, { status: 400 });
+      return NextResponse.json(
+        { message: "ID blog diperlukan" },
+        { status: 400 }
+      );
     }
 
     await prisma.blog.delete({ where: { id } });
@@ -113,6 +140,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ message: "Blog berhasil dihapus" });
   } catch (err) {
     console.error("Error DELETE /blog:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

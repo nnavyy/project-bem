@@ -1,81 +1,40 @@
-import { NextResponse, NextRequest  } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { verifyToken } from "@/lib/auth";
 
-// bikin tipe token sesuai payload login kamu
-interface TokenPayload {
-  id: string;
-  role: string;
-  email?: string;
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { judul, isi } = body;
-
-    // Ambil token dari middleware login
-    const token = (await getToken({ req })) as TokenPayload | null;
-
-    // Pastikan token valid dan role mahasiswa
-    if (!token || token.role !== "mahasiswa") {
-      return NextResponse.json(
-        { message: "Unauthorized, hanya mahasiswa yang bisa kirim laporan" },
-        { status: 401 }
-      );
-    }
-
-    // Buat laporan baru
-    const laporan = await prisma.laporan.create({
-      data: {
-        judul,
-        isi,
-        mahasiswaId: token.id, // id dari mahasiswa yang login
-      },
-    });
-
-    return NextResponse.json(laporan, { status: 201 });
-  } catch (error) {
-    console.error("Error POST laporan:", error);
-    return NextResponse.json(
-      { error: "Terjadi kesalahan server" },
-      { status: 500 }
-    );
-  }
-}
-
+// GET laporan
 export async function GET(req: NextRequest) {
-  try {
-    const token = (await getToken({ req })) as TokenPayload | null;
+  const user = await verifyToken(req);
+  if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    // Hanya admin yang bisa lihat semua laporan
-    if (!token || token.role !== "Admin") {
-      return NextResponse.json(
-        { message: "Unauthorized, hanya admin yang bisa lihat laporan" },
-        { status: 401 }
-      );
-    }
+  const laporan =
+    user.role === "MAHASISWA"
+      ? await prisma.laporan.findMany({
+          where: { mahasiswaId: user.id },
+          orderBy: { createdAt: "desc" },
+        })
+      : await prisma.laporan.findMany({
+          orderBy: { createdAt: "desc" },
+        });
 
-    const laporan = await prisma.laporan.findMany({
-      include: {
-        mahasiswa: {
-          select: {
-            nama: true,
-            nim: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+  return NextResponse.json(laporan);
+}
 
-    return NextResponse.json(laporan, { status: 200 });
-  } catch (error) {
-    console.error("Error GET laporan:", error);
-    return NextResponse.json(
-      { error: "Terjadi kesalahan server" },
-      { status: 500 }
-    );
-  }
+// POST laporan (mahasiswa)
+export async function POST(req: NextRequest) {
+  const user = await verifyToken(req);
+  if (!user || user.role !== "MAHASISWA")
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  const { judul, isi } = await req.json();
+
+  const laporan = await prisma.laporan.create({
+    data: {
+      judul,
+      isi,
+      mahasiswaId: user.id,
+    },
+  });
+
+  return NextResponse.json(laporan, { status: 201 });
 }

@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const portofolio = await prisma.portofolio.findUnique({
       where: { id },
@@ -11,12 +14,18 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     });
 
     if (!portofolio) {
-      return NextResponse.json({ message: "Portofolio tidak ditemukan" }, { status: 404 });
+      return NextResponse.json(
+        { message: "Portofolio tidak ditemukan" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(portofolio);
   } catch (err) {
     console.error("Error GET /portofolio/[id]:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
