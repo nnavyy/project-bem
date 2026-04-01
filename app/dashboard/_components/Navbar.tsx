@@ -61,12 +61,12 @@ export default function Navbar({ showLogin = true }: NavbarProps) {
           </Link>
 
           <nav className="hidden items-center gap-6 text-sm text-white/80 md:flex">
-            <button onClick={() => scrollToSection("blog")} className="hover:text-white">
+            <Link href="/dashboard/blog" className="hover:text-white transition-colors">
               Blog
-            </button>
-            <button onClick={() => scrollToSection("portofolio")} className="hover:text-white">
+            </Link>
+            <Link href="/dashboard/portofolio" className="hover:text-white transition-colors">
               Portofolio
-            </button>
+            </Link>
             <button onClick={() => scrollToSection("suaraku")} className="hover:text-white">
               Suaraku
             </button>
