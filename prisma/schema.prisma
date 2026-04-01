@@ -7,6 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─────────────────────────────────────────────────────────────
+// MAHASISWA
+// ─────────────────────────────────────────────────────────────
 model Mahasiswa {
   id        String    @id @default(uuid())
   nim       String    @unique
@@ -19,99 +22,160 @@ model Mahasiswa {
   laporan   Laporan[]
 }
 
+// ─────────────────────────────────────────────────────────────
+// LAPORAN
+// ─────────────────────────────────────────────────────────────
 model Laporan {
-  id           String        @id @default(uuid())
-  judul        String
-  isi          String
-  jenisKeluhan JenisKeluhan  @default(RUANGAN)
+  id              String                @id @default(uuid())
+  judul           String
+  isi             String                @db.Text
+  jenisKeluhan    JenisKeluhan          @default(RUANGAN)
   tanggalKejadian DateTime?
-  lokasi       String?
-  lampiranUrl  String?
-  status       StatusLaporan @default(PENDING)
-  mahasiswaId  String
-  tindaklanjut String?
-  ditindakOleh String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  adminTindak  Admin?        @relation("AdminTindakLaporan", fields: [ditindakOleh], references: [id])
-  mahasiswa    Mahasiswa     @relation(fields: [mahasiswaId], references: [id])
+  lokasi          String?
+  lampiranUrl     String?
+  status          StatusLaporan         @default(PENDING)
+  mahasiswaId     String
+  ditindakOleh    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  mahasiswa       Mahasiswa             @relation(fields: [mahasiswaId], references: [id])
+  adminTindak     Admin?                @relation("AdminTindakLaporan", fields: [ditindakOleh], references: [id], onDelete: SetNull)
+  tindakLanjut    TindakLanjutLaporan[]
 }
 
-model TokenAdmin {
-  id           String              @id @default(uuid())
-  token        String              @unique
-  tokenRole    RoleAdmin           @default(ADMIN)
-  isUsed       Boolean             @default(false)
-  adminId      String?
-  generatedBy  String?
-  expiredAt    DateTime?
-  isPermanent  Boolean             @default(false)
-  createdAt    DateTime            @default(now())
-  usedAt       DateTime?
-  logAktivitas LogAktivitasAdmin[] @relation("TokenActivity")
-  admin        Admin?              @relation("TokenOwner", fields: [adminId], references: [id])
-  headAdmin    Admin?              @relation("TokenGenerator", fields: [generatedBy], references: [id])
-}
-
-model Blog {
+// Riwayat tindak lanjut per laporan — bisa lebih dari satu entry
+model TindakLanjutLaporan {
   id        String   @id @default(uuid())
-  judul     String
-  isi       String
-  gambar    String?
-  penulisId String
+  laporanId String
+  adminId   String
+  catatan   String   @db.Text
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  penulis   Admin    @relation(fields: [penulisId], references: [id])
+  laporan   Laporan  @relation(fields: [laporanId], references: [id], onDelete: Cascade)
+  admin     Admin    @relation("AdminTindakLanjut", fields: [adminId], references: [id], onDelete: Restrict)
 }
 
+// ─────────────────────────────────────────────────────────────
+// BLOG
+// ─────────────────────────────────────────────────────────────
+model Blog {
+  id        String     @id @default(uuid())
+  judul     String
+  slug      String     @unique
+  isi       String     @db.Text
+  gambar    String?
+  status    StatusBlog @default(DRAFT)
+  penulisId String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  penulis   Admin?     @relation(fields: [penulisId], references: [id], onDelete: SetNull)
+}
+
+// ─────────────────────────────────────────────────────────────
+// PORTOFOLIO & GALERI
+// ─────────────────────────────────────────────────────────────
 model Portofolio {
-  id          String    @id @default(uuid())
-  namaDivisi  String
-  deskripsi   String
-  fotoUtama   String?   // bisa jadi banner atau gambar utama divisi
-  tanggal     DateTime? @default(now())
-  adminId     String
-  admin       Admin     @relation(fields: [adminId], references: [id])
-  galeri      Galeri[]  // relasi ke anggota / foto divisi
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  namaDivisi      String
+  deskripsi       String    @db.Text
+  fotoUtama       String?
+  tanggalKegiatan DateTime?
+  adminId         String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  admin           Admin     @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  galeri          Galeri[]
 }
 
 model Galeri {
-  id            String     @id @default(uuid())
-  portofolioId  String
-  namaAnggota   String
-  jabatan       String?
-  foto          String?
-  portofolio    Portofolio @relation(fields: [portofolioId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid())
+  portofolioId String
+  namaAnggota  String
+  jabatan      String?
+  foto         String?
+  urutan       Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  portofolio   Portofolio @relation(fields: [portofolioId], references: [id], onDelete: Cascade)
 }
 
+// ─────────────────────────────────────────────────────────────
+// TOKEN ADMIN
+// ─────────────────────────────────────────────────────────────
+model TokenAdmin {
+  id           String              @id @default(uuid())
+  // Plain token TIDAK pernah disimpan — hanya SHA-256 hash-nya yang masuk DB.
+  // Token asli ditampilkan SEKALI saat generate, lalu tidak bisa dilihat lagi.
+  tokenHash    String              @unique
+  tokenRole    RoleAdmin           @default(ADMIN)
+  // null  = token belum diklaim oleh siapapun
+  adminId      String?
+  // null  = dibuat langsung oleh developer di DB (untuk HEAD_ADMIN bootstrap)
+  generatedBy  String?
+  // null + isPermanent=false → default expiry 1 hari dari createdAt
+  expiredAt    DateTime?
+  isPermanent  Boolean             @default(false)
+  // true  = token hangus setelah satu kali login berhasil
+  isSingleUse  Boolean             @default(false)
+  isRevoked    Boolean             @default(false)
+  revokedAt    DateTime?
+  createdAt    DateTime            @default(now())
+  // Waktu pertama kali token diklaim (dipakai login)
+  claimedAt    DateTime?
+  logAktivitas LogAktivitasAdmin[] @relation("TokenActivity")
+  admin        Admin?              @relation("TokenOwner", fields: [adminId], references: [id], onDelete: SetNull)
+  headAdmin    Admin?              @relation("TokenGenerator", fields: [generatedBy], references: [id], onDelete: SetNull)
+}
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN
+// ─────────────────────────────────────────────────────────────
+model Admin {
+  id             String                @id @default(uuid())
+  username       String                @unique
+  nama           String
+  role           RoleAdmin             @default(ADMIN)
+  // false = admin dinonaktifkan tanpa dihapus (data historis tetap ada)
+  isActive       Boolean               @default(true)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  blog           Blog[]
+  portofolio     Portofolio[]
+  laporanTindak  Laporan[]             @relation("AdminTindakLaporan")
+  tindakLanjut   TindakLanjutLaporan[] @relation("AdminTindakLanjut")
+  logAktivitas   LogAktivitasAdmin[]
+  tokenAdmin     TokenAdmin[]          @relation("TokenOwner")
+  generatedToken TokenAdmin[]          @relation("TokenGenerator")
+}
+
+// ─────────────────────────────────────────────────────────────
+// LOG AKTIVITAS ADMIN
+// ─────────────────────────────────────────────────────────────
 model LogAktivitasAdmin {
   id         String      @id @default(uuid())
   adminId    String
+  aksi       AksiAdmin
+  // Nama model yang diaksi: "Blog" | "Portofolio" | "Laporan" | "Token" | "Galeri" | "TindakLanjut"
+  // null untuk aksi LOGIN / LOGIN_GAGAL / LOGOUT
+  entityType String?
+  // UUID dari entitas yang diaksi — null untuk LOGIN / LOGIN_GAGAL / LOGOUT
+  entityId   String?
+  // Snapshot data sebelum perubahan — null untuk CREATE & LOGIN
+  dataBefore Json?
+  // Snapshot data setelah perubahan — null untuk DELETE & LOGIN_GAGAL
+  dataAfter  Json?
   tokenId    String?
-  waktuLogin DateTime    @default(now())
   ipAddress  String?
-  admin      Admin       @relation(fields: [adminId], references: [id])
-  token      TokenAdmin? @relation("TokenActivity", fields: [tokenId], references: [id])
+  userAgent  String?
+  // Informasi tambahan (mis. alasan gagal login, nama pemilik token yang di-generate)
+  keterangan String?
+  createdAt  DateTime    @default(now())
+  admin      Admin       @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  token      TokenAdmin? @relation("TokenActivity", fields: [tokenId], references: [id], onDelete: SetNull)
 }
 
-model Admin {
-  id             String              @id @default(uuid())
-  username       String              @unique
-  nama           String
-  role           RoleAdmin           @default(ADMIN)
-  password       String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  blog           Blog[]
-  laporanTindak  Laporan[]           @relation("AdminTindakLaporan")
-  logAktivitas   LogAktivitasAdmin[]
-  portofolio     Portofolio[]
-  tokenAdmin     TokenAdmin[]        @relation("TokenOwner")
-  generatedToken TokenAdmin[]        @relation("TokenGenerator")
-}
-
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
 enum StatusLaporan {
   PENDING
   DIBACA
@@ -119,9 +183,35 @@ enum StatusLaporan {
   SELESAI
 }
 
+enum StatusBlog {
+  DRAFT
+  PUBLISHED
+}
+
 enum RoleAdmin {
   ADMIN
   HEAD_ADMIN
+}
+
+enum AksiAdmin {
+  LOGIN
+  LOGIN_GAGAL
+  LOGOUT
+  CREATE_ADMIN
+  UPDATE_ADMIN
+  CREATE_BLOG
+  UPDATE_BLOG
+  DELETE_BLOG
+  CREATE_PORTOFOLIO
+  UPDATE_PORTOFOLIO
+  DELETE_PORTOFOLIO
+  CREATE_GALERI
+  UPDATE_GALERI
+  DELETE_GALERI
+  UPDATE_STATUS_LAPORAN
+  TAMBAH_TINDAKLANJUT
+  GENERATE_TOKEN
+  REVOKE_TOKEN
 }
 
 enum Jurusan {

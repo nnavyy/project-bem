@@ -18,7 +18,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       <div className="flex items-center space-x-4">
         <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent" />
-        <p className="text-lg font-medium text-gray-700">Mengalihkan ke halaman login...</p>
+        <p className="text-lg font-medium text-gray-700">Mengalihkan ke halaman dashboard...</p>
       </div>
     </div>
   )

@@ -1,107 +1,232 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import jwt from "jsonwebtoken";
+import { hashToken, signToken } from "@/lib/auth";
+import { getRequestMeta, logAktivitas } from "@/lib/logger";
+import { RoleAdmin } from "@prisma/client";
 
-export async function POST(req: Request) {
+type Body = {
+  username?: string;
+  token?: string;
+};
+
+/**
+ * POST /api/login/admin
+ * Login untuk ADMIN / HEAD_ADMIN pakai username + token.
+ */
+export async function POST(req: NextRequest) {
+  const { ip, ua } = getRequestMeta(req);
+
+  let body: Body;
   try {
-    const { username, token } = (await req.json()) as {
-      username: string;
-      token: string;
-    };
+    body = (await req.json()) as Body;
+  } catch {
+    return NextResponse.json(
+      { error: "Body JSON tidak valid" },
+      { status: 400 },
+    );
+  }
 
-    const admin = await prisma.admin.findUnique({
-      where: { username },
+  const username = (body.username ?? "").trim();
+  const tokenPlain = (body.token ?? "").trim();
+
+  if (!username || !tokenPlain) {
+    return NextResponse.json(
+      { error: "Username dan token wajib diisi" },
+      { status: 400 },
+    );
+  }
+
+  const admin = await prisma.admin.findUnique({
+    where: { username },
+    select: {
+      id: true,
+      username: true,
+      nama: true,
+      role: true,
+      isActive: true,
+    },
+  });
+
+  if (!admin || !admin.isActive) {
+    return NextResponse.json(
+      { error: "Username atau token salah" },
+      { status: 401 },
+    );
+  }
+
+  const tokenHash = hashToken(tokenPlain);
+
+  const tokenRecord = await prisma.tokenAdmin.findUnique({
+    where: { tokenHash },
+    select: {
+      id: true,
+      tokenRole: true,
+      adminId: true,
+      generatedBy: true,
+      expiredAt: true,
+      isPermanent: true,
+      isSingleUse: true,
+      isRevoked: true,
+      revokedAt: true,
+      claimedAt: true,
+      createdAt: true,
+    },
+  });
+
+  if (!tokenRecord) {
+    await logAktivitas({
+      adminId: admin.id,
+      aksi: "LOGIN_GAGAL",
+      dataBefore: null,
+      dataAfter: null,
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: "Token tidak ditemukan (hash mismatch)",
     });
 
-    if (!admin) {
-      return NextResponse.json({ error: "Admin tidak ditemukan" }, { status: 404 });
-    }
+    return NextResponse.json(
+      { error: "Username atau token salah" },
+      { status: 401 },
+    );
+  }
 
-    // Cek token valid atau belum dipakai
-    const tokenData = await prisma.tokenAdmin.findUnique({
-      where: { token },
+  if (tokenRecord.tokenRole !== admin.role) {
+    await logAktivitas({
+      adminId: admin.id,
+      aksi: "LOGIN_GAGAL",
+      tokenId: tokenRecord.id,
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: `Role token tidak cocok. tokenRole=${tokenRecord.tokenRole} adminRole=${admin.role}`,
     });
 
-    if (!tokenData) {
-      return NextResponse.json({ error: "Token tidak ditemukan" }, { status: 404 });
-    }
+    return NextResponse.json(
+      { error: "Username atau token salah" },
+      { status: 401 },
+    );
+  }
 
-    if (tokenData.expiredAt && tokenData.expiredAt < new Date()) {
-      return NextResponse.json({ error: "Token sudah kedaluwarsa" }, { status: 401 });
-    }
+  if (tokenRecord.isRevoked) {
+    await logAktivitas({
+      adminId: admin.id,
+      aksi: "LOGIN_GAGAL",
+      tokenId: tokenRecord.id,
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: "Token sudah direvoke",
+    });
 
-    if (tokenData.tokenRole !== admin.role) {
+    return NextResponse.json(
+      { error: "Token sudah tidak aktif" },
+      { status: 401 },
+    );
+  }
+
+  if (!tokenRecord.isPermanent) {
+    const exp = tokenRecord.expiredAt;
+    if (exp && exp.getTime() <= Date.now()) {
+      await logAktivitas({
+        adminId: admin.id,
+        aksi: "LOGIN_GAGAL",
+        tokenId: tokenRecord.id,
+        ipAddress: ip,
+        userAgent: ua,
+        keterangan: "Token sudah expired",
+      });
+
       return NextResponse.json(
-        { error: "Token tidak sesuai role akun ini" },
-        { status: 403 }
+        { error: "Token sudah expired" },
+        { status: 401 },
       );
     }
+  }
 
-    if (tokenData.adminId && tokenData.adminId !== admin.id) {
-      return NextResponse.json({ error: "Token ini terikat ke admin lain" }, { status: 403 });
-    }
-
-    if (tokenData.isUsed && !tokenData.isPermanent) {
-      return NextResponse.json({ error: "Token sudah digunakan" }, { status: 401 });
-    }
-
-    await prisma.tokenAdmin.update({
-      where: { id: tokenData.id },
-      data: {
-        isUsed: true,
-        usedAt: new Date(),
-        adminId: tokenData.adminId ?? admin.id,
-      },
+  if (tokenRecord.adminId && tokenRecord.adminId !== admin.id) {
+    await logAktivitas({
+      adminId: admin.id,
+      aksi: "LOGIN_GAGAL",
+      tokenId: tokenRecord.id,
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: `Token sudah diklaim oleh admin lain (adminId=${tokenRecord.adminId})`,
     });
 
-    // 📝 Catat log aktivitas login
-    await prisma.logAktivitasAdmin.create({
+    return NextResponse.json(
+      { error: "Username atau token salah" },
+      { status: 401 },
+    );
+  }
+
+  const now = new Date();
+  if (!tokenRecord.adminId || !tokenRecord.claimedAt) {
+    await prisma.tokenAdmin.update({
+      where: { id: tokenRecord.id },
       data: {
         adminId: admin.id,
-        tokenId: tokenData.id,
-        ipAddress: req.headers.get("x-forwarded-for") || "unknown",
+        claimedAt: tokenRecord.claimedAt ?? now,
       },
     });
-
-    const secret =
-      process.env.NEXTAUTH_SECRET ||
-      process.env.AUTH_SECRET ||
-      process.env.JWT_SECRET ||
-      "dev-only-secret-change-this";
-    if (!secret) {
-      return NextResponse.json({ error: "NEXTAUTH_SECRET belum diset" }, { status: 500 });
-    }
-
-    const sessionToken = jwt.sign({ id: admin.id, role: admin.role }, secret, {
-      expiresIn: "7d",
-    });
-
-    const normalizedRole = admin.role === "HEAD_ADMIN" ? "headadmin" : "admin";
-
-    // 🍪 Simpan role di cookie
-    const res = NextResponse.json({
-      message: "Login admin berhasil",
-      user: admin,
-      redirect: admin.role === "HEAD_ADMIN" ? "/dashboard/headadmin" : "/dashboard/admin",
-    });
-
-    res.cookies.set("role", normalizedRole, {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    res.cookies.set("next-auth.session-token", sessionToken, {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    return res;
-  } catch (err: unknown) {
-    console.error("Error login admin:", err);
-    const message = err instanceof Error ? err.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
   }
+
+  if (tokenRecord.isSingleUse) {
+    await prisma.tokenAdmin.update({
+      where: { id: tokenRecord.id },
+      data: {
+        isRevoked: true,
+        revokedAt: now,
+      },
+    });
+  }
+
+  const jwt = await signToken({
+    id: admin.id,
+    role: admin.role === RoleAdmin.HEAD_ADMIN ? "HEAD_ADMIN" : "ADMIN",
+  });
+
+  await logAktivitas({
+    adminId: admin.id,
+    aksi: "LOGIN",
+    tokenId: tokenRecord.id,
+    ipAddress: ip,
+    userAgent: ua,
+    keterangan: tokenRecord.isSingleUse
+      ? "Login sukses (token single-use direvoke setelah login)"
+      : "Login sukses",
+  });
+
+  const redirect =
+    admin.role === RoleAdmin.HEAD_ADMIN
+      ? "/dashboard/headadmin"
+      : "/dashboard/admin";
+
+  const res = NextResponse.json({ redirect }, { status: 200 });
+
+  const cookieOptions = {
+    httpOnly: true as const,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  };
+
+  res.cookies.set("next-auth.session-token", jwt, cookieOptions);
+  if (process.env.NODE_ENV === "production") {
+    res.cookies.set("__Secure-next-auth.session-token", jwt, cookieOptions);
+  }
+
+  const roleCookie =
+    admin.role === RoleAdmin.HEAD_ADMIN ? "headadmin" : "admin";
+  res.cookies.set("role", roleCookie, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+
+  return res;
+}
+
+export async function GET() {
+  return NextResponse.json({ message: "Method Not Allowed" }, { status: 405 });
 }
