@@ -8,7 +8,7 @@ export default function Home() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      router.push('/login')
+      router.push('/dashboard')
     }, 1500) // delay 1.5 detik untuk animasi
 
     return () => clearTimeout(timeout)
