@@ -2,7 +2,12 @@ import bcrypt from "bcryptjs";
 import { jwtVerify, JWTPayload as JoseJWTPayload } from "jose";
 import { NextRequest } from "next/server";
 
-const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
+const secretValue =
+  process.env.NEXTAUTH_SECRET ||
+  process.env.AUTH_SECRET ||
+  process.env.JWT_SECRET ||
+  "dev-only-secret-change-this";
+const secret = new TextEncoder().encode(secretValue);
 
 // Rename biar gak bentrok
 interface AppJWTPayload extends JoseJWTPayload {

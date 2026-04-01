@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const role = req.cookies.get('role')?.value
+  const role = req.cookies.get('role')?.value?.toLowerCase()
 
   if (!role) {
     if (pathname.startsWith('/dashboard/mahasiswa')) {

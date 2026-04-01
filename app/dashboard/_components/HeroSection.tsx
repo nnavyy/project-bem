@@ -1,8 +1,14 @@
 "use client";
 
 export default function HeroSection() {
+  function scrollToProfile() {
+    const el = document.getElementById("welcome-speech");
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
-    <section className="relative h-screen pb-24 overflow-visible">
+    <section className="relative min-h-[calc(100vh-68px)] overflow-hidden pb-20 pt-16 sm:pt-20">
       {/* BACKGROUND GEDUNG */}
       <img
         src="/images/hero/bg-gedung.jpg"
@@ -18,9 +24,8 @@ export default function HeroSection() {
       {/* SELAMAT DATANG (DI BELAKANG KEPALA) */}
       <h1
         className="
-          absolute top-[25%] w-full text-center
-          text-white text-6xl font-bold
-          tracking-[0.3em]
+          absolute top-[18%] w-full px-4 text-center
+          text-2xl font-bold tracking-[0.16em] text-white sm:top-[20%] sm:text-4xl md:text-5xl
           z-20
         "
       >
@@ -34,48 +39,38 @@ export default function HeroSection() {
         className="
           absolute bottom-0 left-1/2
           -translate-x-1/2
-          w-[520px]
+          w-[min(520px,90vw)]
           z-30
           drop-shadow-2xl
           select-none
         "
       />
-<p
-  style={{
-    fontFamily: "'Bebas Neue', sans-serif",
-    fontSize: "28px",
-    letterSpacing: "0.15em",
-    lineHeight: "1.00",
-    maxWidth: "120000px",
-  }}
-  className="
-    absolute bottom-[40px]
-    left-1/2 -translate-x-1/2
-    text-center
-    text-white uppercase
-    z-50
-    pointer-events-none
-  "
->
-  OFFICIAL WEBSITE BADAN EKSEKUTIF MAHASISWA <br />
-  INSTITUT TEKNOLOGI STATISTIKA DAN BISNIS MUHAMMADIYAH SEMARANG
-</p>
-
-
-
-
-
-
-      {/* BUTTON PROFIL (DI TENGAH ANTAR SECTION) */}
-      <button
-      
+      <p
+        style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         className="
-          absolute bottom-[-25px]  
+          absolute bottom-[72px] left-1/2 z-50 w-full max-w-4xl -translate-x-1/2
+          px-4 text-center uppercase leading-tight tracking-[0.1em] text-white
+          text-sm sm:bottom-[60px] sm:text-lg md:text-2xl
+          pointer-events-none
+        "
+      >
+        OFFICIAL WEBSITE BADAN EKSEKUTIF MAHASISWA <br />
+        INSTITUT TEKNOLOGI STATISTIKA DAN BISNIS MUHAMMADIYAH SEMARANG
+      </p>
+
+
+
+
+
+
+      {/* BUTTON PROFIL di tengah antar-section */}
+      <button
+        onClick={scrollToProfile}
+        className="
+          absolute bottom-[10px]
           left-1/2 -translate-x-1/2
-          bg-white text-[#0F1F3A]
-          px-12 py-3 rounded-full
-          font-semibold
-          z-50
+          rounded-full bg-white px-8 py-2.5 text-sm font-semibold text-[#0F1F3A] sm:px-12 sm:py-3 sm:text-base
+          shadow-lg z-[60]
         "
       >
         Profil

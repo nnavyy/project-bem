@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 type NavbarProps = {
@@ -7,36 +8,136 @@ type NavbarProps = {
 };
 
 export default function Navbar({ showLogin = true }: NavbarProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authRole, setAuthRole] = useState<string>("");
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/me", { cache: "no-store" });
+        const data = await res.json();
+        if (!isMounted) return;
+        if (res.ok) {
+          setIsAuthenticated(true);
+          setAuthRole(String(data?.role ?? "").toLowerCase());
+        } else {
+          setIsAuthenticated(false);
+          setAuthRole("");
+        }
+      } catch {
+        if (!isMounted) return;
+        setIsAuthenticated(false);
+        setAuthRole("");
+      }
+    }
+    checkSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  function scrollToSection(sectionId: string) {
+    const el = document.getElementById(sectionId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function logout() {
+    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie =
+      "__Secure-next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    window.location.href = "/dashboard";
+  }
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#020617]/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/dashboard" className="text-white font-semibold tracking-wide">
-          BEM ITESA
-        </Link>
-
-        <nav className="hidden items-center gap-6 md:flex text-sm text-white/80">
-          <a href="#blog" className="hover:text-white">
-            Blog
-          </a>
-          <a href="#portofolio" className="hover:text-white">
-            Portofolio
-          </a>
-          <a href="#suaraku" className="hover:text-white">
-            Suaraku
-          </a>
-        </nav>
-
-        {showLogin ? (
-          <Link
-            href="/login/mahasiswa"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90"
-          >
-            Login
+    <>
+      <header className="sticky top-0 z-[70] w-full border-b border-white/10 bg-[#020617]/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link href="/dashboard" className="text-white font-semibold tracking-wide">
+            BEM ITESA
           </Link>
-        ) : (
-          <div />
-        )}
-      </div>
-    </header>
+
+          <nav className="hidden items-center gap-6 text-sm text-white/80 md:flex">
+            <button onClick={() => scrollToSection("blog")} className="hover:text-white">
+              Blog
+            </button>
+            <button onClick={() => scrollToSection("portofolio")} className="hover:text-white">
+              Portofolio
+            </button>
+            <button onClick={() => scrollToSection("suaraku")} className="hover:text-white">
+              Suaraku
+            </button>
+          </nav>
+
+          {!showLogin ? (
+            <div />
+          ) : isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href={
+                  authRole === "head_admin" || authRole === "headadmin"
+                    ? "/dashboard/headadmin"
+                    : authRole === "admin"
+                      ? "/dashboard/admin"
+                      : "/dashboard/mahasiswa"
+                }
+                className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white/90 hover:bg-white/10"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={logout}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90"
+            >
+              Login
+            </button>
+          )}
+        </div>
+      </header>
+
+      {isModalOpen ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#020617] p-5 text-white">
+            <h3 className="text-lg font-semibold">Pilih Jenis Login</h3>
+            <p className="mt-1 text-sm text-white/70">
+              Pilih role untuk masuk ke dashboard yang sesuai.
+            </p>
+            <div className="mt-5 grid gap-3">
+              <Link
+                href="/login/mahasiswa"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg bg-white px-4 py-2 text-center text-sm font-semibold text-black hover:opacity-90"
+              >
+                Login sebagai Mahasiswa
+              </Link>
+              <Link
+                href="/login/admin"
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg border border-white/20 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Login sebagai Admin
+              </Link>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 hover:bg-white/10"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

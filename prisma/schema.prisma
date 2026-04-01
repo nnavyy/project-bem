@@ -13,7 +13,7 @@ model Mahasiswa {
   nama      String
   email     String?
   password  String
-  jurusan   String?
+  jurusan   Jurusan?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   laporan   Laporan[]
@@ -23,6 +23,10 @@ model Laporan {
   id           String        @id @default(uuid())
   judul        String
   isi          String
+  jenisKeluhan JenisKeluhan  @default(RUANGAN)
+  tanggalKejadian DateTime?
+  lokasi       String?
+  lampiranUrl  String?
   status       StatusLaporan @default(PENDING)
   mahasiswaId  String
   tindaklanjut String?
@@ -36,6 +40,7 @@ model Laporan {
 model TokenAdmin {
   id           String              @id @default(uuid())
   token        String              @unique
+  tokenRole    RoleAdmin           @default(ADMIN)
   isUsed       Boolean             @default(false)
   adminId      String?
   generatedBy  String?
@@ -92,13 +97,13 @@ model LogAktivitasAdmin {
 }
 
 model Admin {
-  id             String              @id
+  id             String              @id @default(uuid())
   username       String              @unique
   nama           String
   role           RoleAdmin           @default(ADMIN)
   password       String?
   createdAt      DateTime            @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime            @updatedAt
   blog           Blog[]
   laporanTindak  Laporan[]           @relation("AdminTindakLaporan")
   logAktivitas   LogAktivitasAdmin[]
@@ -117,4 +122,17 @@ enum StatusLaporan {
 enum RoleAdmin {
   ADMIN
   HEAD_ADMIN
+}
+
+enum Jurusan {
+  REKAYASA_PERANGKAT_LUNAK
+  STATISTIK
+  SAINS_AKTUARIA
+  MANAJEMEN_RETAIL
+}
+
+enum JenisKeluhan {
+  RUANGAN
+  DOSEN
+  RUANG_LINGKUP
 }
