@@ -55,7 +55,7 @@ export default function Navbar({ showLogin = true }: NavbarProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-[70] w-full border-b border-white/10 bg-[#020617]/90 backdrop-blur">
+      <header className="sticky top-0 z-[100] w-full border-b border-white/10 bg-[#020617]/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/dashboard" className="text-white font-semibold tracking-wide">
             BEM ITESA
@@ -79,11 +79,13 @@ export default function Navbar({ showLogin = true }: NavbarProps) {
             <div className="flex items-center gap-2">
               <Link
                 href={
-                  authRole === "head_admin" || authRole === "headadmin"
-                    ? "/dashboard/headadmin"
-                    : authRole === "admin"
-                      ? "/dashboard/admin"
-                      : "/dashboard/mahasiswa"
+                  authRole === "super_admin" || authRole === "superadmin"
+                    ? "/dashboard/superadmin"
+                    : authRole === "head_admin" || authRole === "headadmin"
+                      ? "/dashboard/headadmin"
+                      : authRole === "admin"
+                        ? "/dashboard/admin"
+                        : "/dashboard/mahasiswa"
                 }
                 className="rounded-lg border border-white/20 px-3 py-2 text-xs text-white/90 hover:bg-white/10"
               >

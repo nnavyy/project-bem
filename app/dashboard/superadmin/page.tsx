@@ -61,14 +61,21 @@ export default function SuperAdminOverviewPage() {
   useEffect(() => {
     setLoading(true);
     setError(false);
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
     Promise.all([
-      fetch("/api/headadmin/admin").then((r) => r.json()),
-      fetch("/api/laporan").then((r) => r.json()),
-      fetch("/api/blog?includeDraft=1").then((r) => r.json()),
-      fetch("/api/headadmin/logs?pageSize=8").then((r) => r.json()),
-      fetch("/api/superadmin/requests?status=PENDING").then((r) => r.json()),
+      fetch("/api/headadmin/admin", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/laporan", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/blog?includeDraft=1", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/headadmin/logs?pageSize=8", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/superadmin/requests?status=PENDING", { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/headadmin/logs?pageSize=1&from=${encodeURIComponent(todayStart.toISOString())}&to=${encodeURIComponent(todayEnd.toISOString())}`, { cache: "no-store" }).then((r) => r.json()),
     ])
-      .then(([admins, laporan, blogs, logsRes, requests]) => {
+      .then(([admins, laporan, blogs, logsRes, requests, todayRes]) => {
         const adminList: AdminRow[] = Array.isArray(admins) ? admins : [];
         const laporanList: Laporan[] = Array.isArray(laporan) ? laporan : [];
         const blogList: Blog[] = Array.isArray(blogs) ? blogs : [];
@@ -78,7 +85,7 @@ export default function SuperAdminOverviewPage() {
         setActiveAdmins(adminList.filter((a) => a.isActive).length);
         setPendingLaporan(laporanList.filter((l) => l.status === "PENDING").length);
         setPublishedBlogs(blogList.filter((b) => b.status === "PUBLISHED").length);
-        setTodayLogs(logs.items.filter((l) => isToday(l.createdAt)).length);
+        setTodayLogs(todayRes?.total || 0);
         setPendingRequests(requestList.length);
         setRecentLogs(logs.items);
       })

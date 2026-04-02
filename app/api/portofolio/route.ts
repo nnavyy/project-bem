@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const user = await verifyToken(req);
-    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -134,7 +134,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const user = await verifyToken(req);
-    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -144,6 +144,12 @@ export async function PUT(req: NextRequest) {
       deskripsi?: string;
       fotoUtama?: string | null;
       tanggalKegiatan?: string | null;
+      galeri?: Array<{
+        namaAnggota: string;
+        jabatan?: string | null;
+        foto?: string | null;
+        urutan?: number | null;
+      }>;
     };
 
     const id = body.id?.trim();
@@ -179,6 +185,17 @@ export async function PUT(req: NextRequest) {
             : body.tanggalKegiatan
               ? new Date(body.tanggalKegiatan)
               : undefined,
+        ...(body.galeri !== undefined && {
+          galeri: {
+            deleteMany: {},
+            create: body.galeri.map((g) => ({
+              namaAnggota: g.namaAnggota,
+              jabatan: g.jabatan ?? undefined,
+              foto: g.foto ?? undefined,
+              urutan: g.urutan ?? 0,
+            })),
+          },
+        }),
       },
       include: { galeri: { orderBy: { urutan: "asc" } } },
     });

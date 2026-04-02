@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const canSeeDraft =
       user &&
-      (user.role === "ADMIN" || user.role === "HEAD_ADMIN") &&
+      (user.role === "ADMIN" || user.role === "HEAD_ADMIN" || user.role === "SUPER_ADMIN") &&
       includeDraft;
 
     const blogs = await prisma.blog.findMany({
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const user = await verifyToken(req);
-    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -142,7 +142,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const user = await verifyToken(req);
-    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN")) {
+    if (!user || (user.role !== "ADMIN" && user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 

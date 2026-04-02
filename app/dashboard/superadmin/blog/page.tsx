@@ -113,6 +113,7 @@ export default function BlogPage() {
   const [form, setForm] = useState<BlogForm>(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [previewTab, setPreviewTab] = useState(false);
 
   // ── Mutation loading state ───────────────────────────────────────────────────
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -146,6 +147,7 @@ export default function BlogPage() {
     setForm(DEFAULT_FORM);
     setEditTarget(null);
     setFormError("");
+    setPreviewTab(false);
     setModalMode("create");
   }
 
@@ -158,6 +160,7 @@ export default function BlogPage() {
     });
     setEditTarget(b);
     setFormError("");
+    setPreviewTab(false);
     setModalMode("edit");
   }
 
@@ -166,6 +169,7 @@ export default function BlogPage() {
     setEditTarget(null);
     setForm(DEFAULT_FORM);
     setFormError("");
+    setPreviewTab(false);
   }
 
   function setField<K extends keyof BlogForm>(key: K, value: BlogForm[K]) {
@@ -513,9 +517,25 @@ export default function BlogPage() {
           <div className="w-full max-w-lg bg-[#020617] border border-white/10 rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
             {/* Modal header */}
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-white">
-                {modalMode === "create" ? "Buat Blog Baru" : "Edit Blog"}
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold text-white">
+                  {modalMode === "create" ? "Buat Blog Baru" : "Edit Blog"}
+                </h2>
+                <div className="flex bg-white/5 rounded-lg p-1">
+                  <button
+                    onClick={() => setPreviewTab(false)}
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${!previewTab ? 'bg-blue-600 text-white font-medium' : 'text-white/50 hover:text-white/80'}`}
+                  >
+                    Form
+                  </button>
+                  <button
+                    onClick={() => setPreviewTab(true)}
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${previewTab ? 'bg-blue-600 text-white font-medium' : 'text-white/50 hover:text-white/80'}`}
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={closeModal}
                 className="text-white/40 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-colors"
@@ -525,8 +545,38 @@ export default function BlogPage() {
               </button>
             </div>
 
-            {/* Form */}
-            <div className="space-y-4">
+            {/* Body */}
+            {previewTab ? (
+              <div className="bg-white rounded-xl overflow-hidden shadow-xl min-h-[400px]">
+                {form.gambar ? (
+                  <div className="w-full h-56 bg-slate-100">
+                    <img src={form.gambar} alt="Cover" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-full h-40 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-400 text-sm">
+                    <svg className="w-10 h-10 mr-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                    Tanpa Gambar Cover
+                  </div>
+                )}
+                <div className="p-6 md:p-8 overflow-hidden">
+                  <h1 className="text-2xl font-bold text-slate-900 mb-4 leading-tight break-words overflow-wrap-anywhere">
+                    {form.judul || <span className="text-slate-400 italic">Judul Blog (Belum diisi)</span>}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 mb-6 border-b border-slate-100 pb-5">
+                    <span className="font-medium text-slate-700">Author</span>
+                    <span>&bull;</span>
+                    <span>{fmtDate(new Date())}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${form.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{form.status}</span>
+                  </div>
+                  <article className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap break-words" style={{ overflowWrap: 'anywhere' }}>
+                    {form.isi || <span className="text-slate-400 italic">Isi blog masih kosong...</span>}
+                  </article>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
               {/* Judul */}
               <div>
                 <label className="block text-sm text-white/70 mb-1.5">
@@ -670,7 +720,8 @@ export default function BlogPage() {
                   <option value="PUBLISHED">PUBLISHED</option>
                 </select>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Form error */}
             {formError && (

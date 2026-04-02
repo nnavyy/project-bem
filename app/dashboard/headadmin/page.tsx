@@ -251,13 +251,19 @@ export default function HeadAdminOverviewPage() {
     setLoading(true);
     setError(false);
 
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
     Promise.all([
-      fetch("/api/headadmin/admin").then((r) => r.json()),
-      fetch("/api/laporan").then((r) => r.json()),
-      fetch("/api/blog?includeDraft=1").then((r) => r.json()),
-      fetch("/api/headadmin/logs?pageSize=8").then((r) => r.json()),
+      fetch("/api/headadmin/admin", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/laporan", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/blog?includeDraft=1", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/headadmin/logs?pageSize=8", { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/headadmin/logs?pageSize=1&from=${encodeURIComponent(todayStart.toISOString())}&to=${encodeURIComponent(todayEnd.toISOString())}`, { cache: "no-store" }).then((r) => r.json()),
     ])
-      .then(([admins, laporan, blogs, logsRes]) => {
+      .then(([admins, laporan, blogs, logsRes, todayRes]) => {
         const adminList: AdminRow[] = Array.isArray(admins) ? admins : [];
         const laporanList: Laporan[] = Array.isArray(laporan) ? laporan : [];
         const blogList: Blog[] = Array.isArray(blogs) ? blogs : [];
@@ -274,9 +280,7 @@ export default function HeadAdminOverviewPage() {
           blogList.filter((b) => b.status === "PUBLISHED").length,
         );
 
-        const todayCount = logs.items.filter((l) =>
-          isToday(l.createdAt),
-        ).length;
+        const todayCount = todayRes?.total || 0;
         setTodayLogs(todayCount);
         setRecentLogs(logs.items);
       })

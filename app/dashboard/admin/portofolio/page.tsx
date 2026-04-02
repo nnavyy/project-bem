@@ -37,6 +37,14 @@ type PortofolioForm = {
   deskripsi: string;
   fotoUtama: string;
   tanggalKegiatan: string;
+  galeri: Array<{
+    _tempId: string;
+    namaAnggota: string;
+    jabatan: string;
+    foto: string;
+    urutan: number;
+    uploading?: boolean;
+  }>;
 };
 
 type ModalMode = "create" | "edit" | "detail" | null;
@@ -48,6 +56,7 @@ const DEFAULT_FORM: PortofolioForm = {
   deskripsi: "",
   fotoUtama: "",
   tanggalKegiatan: "",
+  galeri: [],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -146,6 +155,7 @@ export default function PortofolioPage() {
   const [form, setForm] = useState<PortofolioForm>(DEFAULT_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   // ── Per-row action state ──────────────────────────────────────────────────────
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -187,10 +197,47 @@ export default function PortofolioPage() {
       deskripsi: p.deskripsi,
       fotoUtama: p.fotoUtama ?? "",
       tanggalKegiatan: toDateInputValue(p.tanggalKegiatan),
+      galeri: p.galeri.map((g) => ({
+        _tempId: Math.random().toString(36).substring(2),
+        namaAnggota: g.namaAnggota,
+        jabatan: g.jabatan ?? "",
+        foto: g.foto ?? "",
+        urutan: g.urutan ?? 0,
+      })),
     });
     setTarget(p);
     setFormError("");
     setModalMode("edit");
+  }
+
+  function addAnggota() {
+    setForm((prev) => ({
+      ...prev,
+      galeri: [
+        ...prev.galeri,
+        {
+          _tempId: Math.random().toString(36).substring(2),
+          namaAnggota: "",
+          jabatan: "",
+          foto: "",
+          urutan: prev.galeri.length,
+        },
+      ],
+    }));
+  }
+
+  function updateAnggota(tempId: string, field: string, value: string | number | boolean) {
+    setForm((prev) => ({
+      ...prev,
+      galeri: prev.galeri.map((g) => (g._tempId === tempId ? { ...g, [field]: value } : g)),
+    }));
+  }
+
+  function removeAnggota(tempId: string) {
+    setForm((prev) => ({
+      ...prev,
+      galeri: prev.galeri.filter((g) => g._tempId !== tempId),
+    }));
   }
 
   function openDetail(p: Portofolio) {
@@ -203,6 +250,7 @@ export default function PortofolioPage() {
     setTarget(null);
     setForm(DEFAULT_FORM);
     setFormError("");
+    setShowPreview(false);
   }
 
   function setField<K extends keyof PortofolioForm>(
@@ -230,6 +278,14 @@ export default function PortofolioPage() {
       const body: Record<string, unknown> = {
         namaDivisi: form.namaDivisi.trim(),
         deskripsi: form.deskripsi.trim(),
+        galeri: form.galeri
+          .filter((g) => g.namaAnggota.trim() !== "")
+          .map((g) => ({
+            namaAnggota: g.namaAnggota.trim(),
+            jabatan: g.jabatan.trim() || null,
+            foto: g.foto.trim() || null,
+            urutan: Number(g.urutan) || 0,
+          })),
       };
       if (form.fotoUtama.trim()) body.fotoUtama = form.fotoUtama.trim();
       if (form.tanggalKegiatan) body.tanggalKegiatan = form.tanggalKegiatan;
@@ -673,6 +729,114 @@ export default function PortofolioPage() {
                   className="w-full bg-[#0b1220] border border-white/15 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-white/30 transition-colors scheme-dark"
                 />
               </div>
+
+              {/* Galeri Anggota */}
+              <div className="pt-4 border-t border-white/10 mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm text-white/70 font-medium">
+                    Galeri Anggota <span className="text-white/35 font-normal">(opsional)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addAnggota}
+                    className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded transition-colors"
+                  >
+                    + Tambah Anggota
+                  </button>
+                </div>
+                
+                {form.galeri.length === 0 ? (
+                  <div className="text-center py-6 border border-white/10 border-dashed rounded-lg bg-[#0b1220]">
+                    <p className="text-white/40 text-xs text-center">Belum ada anggota yang ditambahkan.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {form.galeri.map((g, index) => (
+                      <div key={g._tempId} className="flex flex-col sm:flex-row gap-3 p-3 border border-white/10 rounded-lg bg-[#0b1220] relative max-h-48">
+                        {/* Foto Uploader */}
+                        <div className="shrink-0">
+                          {g.foto ? (
+                            <div className="relative w-16 h-16 rounded overflow-hidden group">
+                              <img src={g.foto} alt="Foto" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => updateAnggota(g._tempId, "foto", "")}
+                                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                              >
+                                <IconX />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="flex flex-col items-center justify-center w-16 h-16 rounded border border-dashed border-white/20 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                              {g.uploading ? (
+                                <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <span className="text-white/40 text-[10px] text-center px-1">Upload Foto</span>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if(!file) return;
+                                  updateAnggota(g._tempId, "uploading", true);
+                                  try {
+                                    const fd = new FormData();
+                                    fd.append("file", file);
+                                    const res = await fetch("/api/upload?subfolder=portofolio", { method: "POST", body: fd });
+                                    const data = await res.json();
+                                    if(res.ok) updateAnggota(g._tempId, "foto", data.url);
+                                    else throw new Error("Gagal upload");
+                                  } catch (err) {
+                                    alert("Gagal mengupload foto anggota");
+                                  } finally {
+                                    updateAnggota(g._tempId, "uploading", false);
+                                    e.target.value = "";
+                                  }
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
+                        {/* Fields */}
+                        <div className="flex-1 space-y-2 min-w-0">
+                          <input
+                            type="text"
+                            placeholder="Nama Lengkap *"
+                            value={g.namaAnggota}
+                            onChange={(e) => updateAnggota(g._tempId, "namaAnggota", e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-white/30 outline-none focus:border-white/30"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Jabatan"
+                            value={g.jabatan}
+                            onChange={(e) => updateAnggota(g._tempId, "jabatan", e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-white/30 outline-none focus:border-white/30"
+                          />
+                        </div>
+                        <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2">
+                           <input
+                             type="number"
+                             placeholder="Urutan"
+                             value={g.urutan === 0 && g.namaAnggota === "" ? index : g.urutan}
+                             onChange={(e) => updateAnggota(g._tempId, "urutan", parseInt(e.target.value) || 0)}
+                             className="w-16 bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-center text-white placeholder:text-white/30 outline-none focus:border-white/30"
+                           />
+                           <button
+                             type="button"
+                             onClick={() => removeAnggota(g._tempId)}
+                             className="text-red-400 hover:text-red-300 text-[10px] px-2 py-1 rounded bg-red-500/10 transition-colors uppercase font-medium"
+                           >
+                             Hapus
+                           </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Form error */}
@@ -723,9 +887,24 @@ export default function PortofolioPage() {
                   <h2 className="text-lg font-semibold text-white leading-snug">
                     {target.namaDivisi}
                   </h2>
-                  <p className="text-white/40 text-xs mt-0.5 font-mono">
-                    #{target.id.substring(0, 12)}…
-                  </p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <button
+                      onClick={() => setShowPreview(false)}
+                      className={`text-xs px-3 py-1 rounded-full transition-colors ${!showPreview ? "bg-white text-black font-semibold" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
+                    >
+                      Data Internal
+                    </button>
+                    <button
+                      onClick={() => setShowPreview(true)}
+                      className={`text-xs px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${showPreview ? "bg-blue-500 text-white font-semibold" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Preview Publik
+                    </button>
+                  </div>
                 </div>
                 <button
                   onClick={closeModal}
@@ -736,164 +915,216 @@ export default function PortofolioPage() {
                 </button>
               </div>
 
-              {/* Foto utama */}
-              {target.fotoUtama && (
-                <div className="mb-5 rounded-xl overflow-hidden border border-white/10 h-48 bg-black/20">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={target.fotoUtama}
-                    alt={target.namaDivisi}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (
-                        e.currentTarget as HTMLImageElement
-                      ).parentElement!.style.display = "none";
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Info grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-5">
-                <div>
-                  <p className="text-white/40 text-xs mb-1">Deskripsi</p>
-                  <p className="text-white/75 text-sm leading-relaxed">
-                    {target.deskripsi}
-                  </p>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-white/40 text-xs mb-0.5">
-                      Admin Pembuat
-                    </p>
-                    <p className="text-white/75 text-sm">
-                      {target.admin?.nama ?? "—"}
-                    </p>
-                    <p className="text-white/35 text-xs font-mono">
-                      @{target.admin?.username ?? "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-white/40 text-xs mb-0.5">
-                      Tanggal Kegiatan
-                    </p>
-                    <p className="text-white/75 text-sm">
-                      {fmtDateOnly(target.tanggalKegiatan)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-white/40 text-xs mb-0.5">Dibuat Pada</p>
-                    <p className="text-white/55 text-xs">
-                      {fmtDate(target.createdAt)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-white/40 text-xs mb-0.5">
-                      Terakhir Diperbarui
-                    </p>
-                    <p className="text-white/55 text-xs">
-                      {fmtDate(target.updatedAt)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-white/10 mb-5" />
-
-              {/* Galeri / anggota */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-white/50 text-xs font-medium uppercase tracking-wider">
-                    Galeri Anggota
-                  </p>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-white/50 font-medium">
-                    {target.galeri.length} anggota
-                  </span>
-                </div>
-
-                {target.galeri.length === 0 ? (
-                  <p className="text-white/40 text-sm text-center py-8">
-                    Belum ada anggota di galeri ini
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-white/10">
-                          <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
-                            Foto
-                          </th>
-                          <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
-                            Nama Anggota
-                          </th>
-                          <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
-                            Jabatan
-                          </th>
-                          <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
-                            Urutan
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {target.galeri
-                          .slice()
-                          .sort((a, b) => (a.urutan ?? 999) - (b.urutan ?? 999))
-                          .map((g) => (
-                            <tr
-                              key={g.id}
-                              className="border-b border-white/5 hover:bg-white/5 transition-colors"
-                            >
-                              {/* Foto */}
-                              <td className="py-3 px-4">
+              <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {showPreview ? (
+                  <div className="bg-white text-slate-800 rounded-xl overflow-hidden shadow-xl border border-white/10">
+                    <div className="relative h-64 bg-slate-200">
+                      {target.fotoUtama ? (
+                        <img src={target.fotoUtama} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                          Tanpa Foto Utama
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-6 text-white w-full">
+                        <span className="bg-blue-600 px-3 py-1 text-xs font-semibold rounded-full mb-3 inline-block">Portofolio BEM</span>
+                        <h1 className="text-2xl font-bold break-words">{target.namaDivisi}</h1>
+                        {target.tanggalKegiatan && (
+                          <p className="text-white/80 text-sm mt-1">{fmtDateOnly(target.tanggalKegiatan)}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-6 md:p-8 overflow-hidden">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3 break-words">Deskripsi Kegiatan</h3>
+                      <p className="text-slate-600 leading-relaxed whitespace-pre-wrap mb-8 text-sm break-words" style={{ overflowWrap: 'anywhere' }}>{target.deskripsi}</p>
+                      
+                      {target.galeri.length > 0 && (
+                        <>
+                          <h3 className="text-lg font-semibold text-slate-900 mb-4 border-t border-slate-100 pt-6">Anggota Terlibat</h3>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            {target.galeri.slice().sort((a,b)=>(a.urutan??999)-(b.urutan??999)).map(g => (
+                              <div key={g.id} className="group relative overflow-hidden rounded-xl aspect-[3/4] bg-slate-100 shadow-sm border border-slate-200/50">
                                 {g.foto ? (
-                                  /* eslint-disable-next-line @next/next/no-img-element */
-                                  <img
-                                    src={g.foto}
-                                    alt={g.namaAnggota}
-                                    className="w-9 h-9 rounded-full object-cover border border-white/10"
-                                    onError={(e) => {
-                                      (
-                                        e.currentTarget as HTMLImageElement
-                                      ).style.display = "none";
-                                      (
-                                        e.currentTarget
-                                          .nextSibling as HTMLElement | null
-                                      )?.style.removeProperty("display");
-                                    }}
-                                  />
-                                ) : null}
-                                {!g.foto && (
-                                  <AvatarPlaceholder name={g.namaAnggota} />
-                                )}
-                              </td>
-
-                              {/* Nama */}
-                              <td className="py-3 px-4 text-white/80 font-medium">
-                                {g.namaAnggota}
-                              </td>
-
-                              {/* Jabatan */}
-                              <td className="py-3 px-4 text-white/55">
-                                {g.jabatan ?? (
-                                  <span className="text-white/25">—</span>
-                                )}
-                              </td>
-
-                              {/* Urutan */}
-                              <td className="py-3 px-4">
-                                {g.urutan !== null && g.urutan !== undefined ? (
-                                  <span className="text-white/50 text-xs font-mono bg-white/5 px-2 py-0.5 rounded">
-                                    {g.urutan}
-                                  </span>
+                                  <img src={g.foto} alt={g.namaAnggota} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                 ) : (
-                                  <span className="text-white/25">—</span>
+                                  <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 text-3xl font-bold uppercase">{g.namaAnggota.substring(0,2)}</div>
                                 )}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 opacity-80" />
+                                <div className="absolute bottom-0 left-0 w-full p-4 text-white translate-y-2 group-hover:translate-y-0 transition-transform">
+                                  <p className="font-semibold text-sm leading-tight text-white">{g.namaAnggota}</p>
+                                  <p className="text-xs text-white/80 line-clamp-1 mt-0.5">{g.jabatan}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {/* Foto utama */}
+                    {target.fotoUtama && (
+                      <div className="mb-5 rounded-xl overflow-hidden border border-white/10 h-48 bg-black/20">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={target.fotoUtama}
+                          alt={target.namaDivisi}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (
+                              e.currentTarget as HTMLImageElement
+                            ).parentElement!.style.display = "none";
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Info grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-5">
+                      <div>
+                        <p className="text-white/40 text-xs mb-1">Deskripsi</p>
+                        <p className="text-white/75 text-sm leading-relaxed">
+                          {target.deskripsi}
+                        </p>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-white/40 text-xs mb-0.5">
+                            Admin Pembuat
+                          </p>
+                          <p className="text-white/75 text-sm">
+                            {target.admin?.nama ?? "—"}
+                          </p>
+                          <p className="text-white/35 text-xs font-mono">
+                            @{target.admin?.username ?? "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-xs mb-0.5">
+                            Tanggal Kegiatan
+                          </p>
+                          <p className="text-white/75 text-sm">
+                            {fmtDateOnly(target.tanggalKegiatan)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-xs mb-0.5">Dibuat Pada</p>
+                          <p className="text-white/55 text-xs">
+                            {fmtDate(target.createdAt)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-xs mb-0.5">
+                            Terakhir Diperbarui
+                          </p>
+                          <p className="text-white/55 text-xs">
+                            {fmtDate(target.updatedAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-white/10 mb-5" />
+
+                    {/* Galeri / anggota */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-white/50 text-xs font-medium uppercase tracking-wider">
+                          Galeri Anggota
+                        </p>
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-white/50 font-medium">
+                          {target.galeri.length} anggota
+                        </span>
+                      </div>
+
+                      {target.galeri.length === 0 ? (
+                        <p className="text-white/40 text-sm text-center py-8">
+                          Belum ada anggota di galeri ini
+                        </p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-white/10">
+                                <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
+                                  Foto
+                                </th>
+                                <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
+                                  Nama Anggota
+                                </th>
+                                <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
+                                  Jabatan
+                                </th>
+                                <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
+                                  Urutan
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {target.galeri
+                                .slice()
+                                .sort((a, b) => (a.urutan ?? 999) - (b.urutan ?? 999))
+                                .map((g) => (
+                                  <tr
+                                    key={g.id}
+                                    className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                                  >
+                                    {/* Foto */}
+                                    <td className="py-3 px-4">
+                                      {g.foto ? (
+                                        /* eslint-disable-next-line @next/next/no-img-element */
+                                        <img
+                                          src={g.foto}
+                                          alt={g.namaAnggota}
+                                          className="w-9 h-9 rounded-full object-cover border border-white/10"
+                                          onError={(e) => {
+                                            (
+                                              e.currentTarget as HTMLImageElement
+                                            ).style.display = "none";
+                                            (
+                                              e.currentTarget
+                                                .nextSibling as HTMLElement | null
+                                            )?.style.removeProperty("display");
+                                          }}
+                                        />
+                                      ) : null}
+                                      {!g.foto && (
+                                        <AvatarPlaceholder name={g.namaAnggota} />
+                                      )}
+                                    </td>
+
+                                    {/* Nama */}
+                                    <td className="py-3 px-4 text-white/80 font-medium">
+                                      {g.namaAnggota}
+                                    </td>
+
+                                    {/* Jabatan */}
+                                    <td className="py-3 px-4 text-white/55">
+                                      {g.jabatan ?? (
+                                        <span className="text-white/25">—</span>
+                                      )}
+                                    </td>
+
+                                    {/* Urutan */}
+                                    <td className="py-3 px-4">
+                                      {g.urutan !== null && g.urutan !== undefined ? (
+                                        <span className="text-white/50 text-xs font-mono bg-white/5 px-2 py-0.5 rounded">
+                                          {g.urutan}
+                                        </span>
+                                      ) : (
+                                        <span className="text-white/25">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
 
