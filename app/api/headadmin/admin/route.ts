@@ -11,7 +11,7 @@ import { getRequestMeta, logAktivitas } from "@/lib/logger";
 export async function GET(req: NextRequest) {
   try {
     const user = await verifyToken(req);
-    if (!user || user.role !== "HEAD_ADMIN") {
+    if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const user = await verifyToken(req);
-    if (!user || user.role !== "HEAD_ADMIN") {
+    if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -209,7 +209,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const user = await verifyToken(req);
-    if (!user || user.role !== "HEAD_ADMIN") {
+    if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
@@ -249,8 +249,8 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // HEAD_ADMIN tidak bisa edit sesama HEAD_ADMIN via endpoint ini
-    if (target.role === "HEAD_ADMIN") {
+    // HEAD_ADMIN tidak bisa edit sesama HEAD_ADMIN via endpoint ini (SUPER_ADMIN boleh)
+    if (target.role === "HEAD_ADMIN" && user.role !== "SUPER_ADMIN") {
       return NextResponse.json(
         {
           message:

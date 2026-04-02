@@ -48,9 +48,9 @@ function parseDateParam(value: string | null): Date | undefined {
  */
 export async function GET(req: NextRequest) {
   try {
-    // Auth — HEAD_ADMIN only
+    // Auth — HEAD_ADMIN or SUPER_ADMIN
     const user = await verifyToken(req);
-    if (!user || user.role !== "HEAD_ADMIN") {
+    if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 

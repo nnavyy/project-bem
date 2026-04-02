@@ -19,7 +19,7 @@ type CreateTokenBody = {
  */
 export async function GET(req: NextRequest) {
   const user = await verifyToken(req);
-  if (!user || user.role !== "HEAD_ADMIN") {
+  if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
@@ -72,24 +72,30 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   const user = await verifyToken(req);
-  if (!user || user.role !== "HEAD_ADMIN") {
+  if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   const { ip, ua } = getRequestMeta(req);
 
-  // Validasi bahwa admin yang request memang HEAD_ADMIN di DB
-  const headAdmin = await prisma.admin.findUnique({
-    where: { id: user.id },
-    select: { id: true, role: true, isActive: true },
-  });
+  // Validasi bahwa admin yang request memang HEAD_ADMIN di DB (tidak berlaku untuk SUPER_ADMIN)
+  let headAdmin: { id: string; role: string; isActive: boolean } | null = null;
+  if (user.role === "HEAD_ADMIN") {
+    headAdmin = await prisma.admin.findUnique({
+      where: { id: user.id },
+      select: { id: true, role: true, isActive: true },
+    });
 
-  if (
-    !headAdmin ||
-    headAdmin.role !== RoleAdmin.HEAD_ADMIN ||
-    !headAdmin.isActive
-  ) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (
+      !headAdmin ||
+      headAdmin.role !== RoleAdmin.HEAD_ADMIN ||
+      !headAdmin.isActive
+    ) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+  } else {
+    // SUPER_ADMIN — gunakan ID dari token langsung
+    headAdmin = { id: user.id, role: "SUPER_ADMIN", isActive: true };
   }
 
   let body: CreateTokenBody;

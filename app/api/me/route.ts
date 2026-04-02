@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
         nama: true,
         role: true,
         isActive: true,
+        isDeveloper: true,
       },
     });
 
@@ -53,7 +54,6 @@ export async function GET(req: NextRequest) {
 
     // Jangan kembalikan isActive ke client
     const { isActive: _, ...profile } = admin;
-
     return NextResponse.json({ role: user.role, profile });
   } catch (error) {
     console.error("Error /api/me:", error);

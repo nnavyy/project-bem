@@ -1,22 +1,22 @@
 /**
- * Bootstrap script — buat HEAD_ADMIN + token pertama kali.
+ * Bootstrap script — buat SUPER_ADMIN + token pertama kali.
  *
  * Jalankan dengan:
  *   node prisma/bootstrap.mjs <username> [nama]
  *
  * Contoh:
- *   node prisma/bootstrap.mjs nandaha "Nanda Head Admin"
+ *   node prisma/bootstrap.mjs nandaha "Nanda Super Admin"
  *
  * Apa yang dilakukan script ini:
  *  1. Cari admin berdasarkan username (atau buat baru jika belum ada)
- *  2. Pastikan role-nya HEAD_ADMIN + isActive = true
- *  3. Hapus token HEAD_ADMIN milik admin ini + semua orphan token
+ *  2. Pastikan role-nya SUPER_ADMIN + isActive = true + isDeveloper = true
+ *  3. Hapus token SUPER_ADMIN/HEAD_ADMIN milik admin ini + semua orphan token
  *     (adminId = null ATAU adminId tidak cocok dengan Admin manapun di DB)
  *  4. Generate token acak 16 karakter alphanumeric
  *  5. Simpan SHA-256(token) ke kolom tokenHash di DB
  *  6. Print plain token sekali ke console — catat baik-baik!
  *
- * ⚠️  Script ini AMAN dijalankan berkali-kali dan untuk banyak HEAD_ADMIN.
+ * ⚠️  Script ini AMAN dijalankan berkali-kali dan untuk banyak SUPER_ADMIN.
  *     Setiap run hanya menyentuh token milik username yang diberikan.
  */
 
@@ -63,7 +63,7 @@ async function main() {
   }
 
   console.log("\n" + line("═"));
-  console.log("  Bootstrap HEAD_ADMIN — BEM ITESA");
+  console.log("  Bootstrap SUPER_ADMIN — BEM ITESA");
   console.log(line("═"));
 
   // ── 1. Temukan atau buat admin ──────────────────────────────
@@ -74,12 +74,12 @@ async function main() {
     console.log(`   ID saat ini : ${admin.id}`);
     console.log(`   Role        : ${admin.role}`);
 
-    if (admin.role !== "HEAD_ADMIN" || !admin.isActive) {
+    if (admin.role !== "SUPER_ADMIN" || !admin.isActive || !admin.isDeveloper) {
       admin = await prisma.admin.update({
         where: { id: admin.id },
-        data: { role: "HEAD_ADMIN", isActive: true },
+        data: { role: "SUPER_ADMIN", isActive: true, isDeveloper: true },
       });
-      console.log(`✅  Role di-upgrade → HEAD_ADMIN, isActive → true`);
+      console.log(`✅  Role di-upgrade → SUPER_ADMIN, isActive → true, isDeveloper → true`);
     } else {
       console.log(`   (tidak ada perubahan pada data admin)`);
     }
@@ -88,22 +88,22 @@ async function main() {
       data: {
         username,
         nama,
-        role: "HEAD_ADMIN",
+        role: "SUPER_ADMIN",
         isActive: true,
+        isDeveloper: true,
       },
     });
-    console.log(`\n✅  HEAD_ADMIN baru dibuat.`);
+    console.log(`\n✅  SUPER_ADMIN baru dibuat.`);
     console.log(`   ID       : ${admin.id}`);
     console.log(`   Username : ${admin.username}`);
     console.log(`   Nama     : ${admin.nama}`);
   }
 
-  // ── 2. Hapus token HEAD_ADMIN milik admin ini ───────────────
-  //    Hanya token milik admin.id ini yang dihapus,
-  //    bukan token HEAD_ADMIN lain yang mungkin sudah ada.
+  // ── 2. Hapus token SUPER_ADMIN/HEAD_ADMIN milik admin ini ──
+  //    Hanya token milik admin.id ini yang dihapus.
   const deletedOwned = await prisma.tokenAdmin.deleteMany({
     where: {
-      tokenRole: "HEAD_ADMIN",
+      tokenRole: { in: ["SUPER_ADMIN", "HEAD_ADMIN"] },
       adminId: admin.id,
     },
   });
@@ -121,8 +121,8 @@ async function main() {
   //    ke record manapun — persis seperti LEFT JOIN IS NULL.
   const deletedOrphan = await prisma.tokenAdmin.deleteMany({
     where: {
-      tokenRole: "HEAD_ADMIN",
-      admin: null, // adminId = null ATAU adminId tidak ada di tabel Admin
+      tokenRole: { in: ["SUPER_ADMIN", "HEAD_ADMIN"] },
+      admin: null,
     },
   });
 
@@ -139,7 +139,7 @@ async function main() {
   const token = await prisma.tokenAdmin.create({
     data: {
       tokenHash, // SHA-256(plainToken) — yang tersimpan di DB
-      tokenRole: "HEAD_ADMIN",
+      tokenRole: "SUPER_ADMIN",
       adminId: admin.id,
       generatedBy: null, // null = dibuat developer langsung (bootstrap)
       isPermanent: true,
@@ -157,7 +157,7 @@ async function main() {
   console.log(`  Admin ID   : ${admin.id}`);
   console.log(`  Username   : ${admin.username}`);
   console.log(`  Nama       : ${admin.nama}`);
-  console.log(`  Role       : HEAD_ADMIN`);
+  console.log(`  Role       : SUPER_ADMIN`);
   console.log(`  Token ID   : ${token.id}`);
   console.log(line("─"));
   console.log("  ⚠️   SIMPAN TOKEN INI SEKARANG!");
@@ -165,7 +165,7 @@ async function main() {
   console.log("");
   console.log(`  TOKEN      : ${plainToken}`);
   console.log(line("═"));
-  console.log("\n  Gunakan username + TOKEN di atas untuk login.\n");
+  console.log("\n  Gunakan username + TOKEN di atas untuk login sebagai SUPER_ADMIN.\n");
 }
 
 main()

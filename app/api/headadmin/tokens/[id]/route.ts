@@ -4,10 +4,17 @@ import { verifyToken } from "@/lib/auth";
 import { getRequestMeta, logAktivitas } from "@/lib/logger";
 
 /**
- * Revoke token (soft delete).
- * - HEAD_ADMIN only
- * - Sets: isRevoked=true, revokedAt=now()
- * - Keeps record for history/audit
+ * Revoke token (soft delete) — dengan aturan:
+ *
+ * SUPER_ADMIN:
+ * - Bisa revoke token ADMIN & HEAD_ADMIN milik siapapun langsung
+ * - TIDAK bisa revoke token SUPER_ADMIN (protected)
+ *
+ * HEAD_ADMIN:
+ * - Tidak bisa revoke token miliknya sendiri (token yang adminId == user.id)
+ * - Tidak bisa revoke token yang generatedBy == null (developer/bootstrap)
+ * - Revoke token HEAD_ADMIN lain → masuk RequestApproval (PENDING), butuh SUPER_ADMIN
+ * - Revoke token ADMIN → langsung dieksekusi
  */
 export async function PATCH(
   req: NextRequest,
@@ -16,7 +23,7 @@ export async function PATCH(
   const { ip, ua } = getRequestMeta(req);
 
   const user = await verifyToken(req);
-  if (!user || user.role !== "HEAD_ADMIN") {
+  if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,9 +32,9 @@ export async function PATCH(
   const token = await prisma.tokenAdmin.findUnique({
     where: { id },
     include: {
-      admin: { select: { id: true, username: true, nama: true, role: true } },
+      admin: { select: { id: true, username: true, nama: true, role: true, isDeveloper: true } },
       headAdmin: {
-        select: { id: true, username: true, nama: true, role: true },
+        select: { id: true, username: true, nama: true, role: true, isDeveloper: true },
       },
     },
   });
@@ -39,88 +46,129 @@ export async function PATCH(
     );
   }
 
-  if (token.generatedBy === null) {
+  // ── PROTEKSI: Token SUPER_ADMIN tidak bisa direvoke siapapun ──
+  if (token.tokenRole === "SUPER_ADMIN") {
     return NextResponse.json(
-      { message: "Aksi Ditolak: Token ini dibuat langsung oleh Sistem/Developer dan bersifat permanen (tidak dapat di-revoke)." },
+      { message: "Aksi Ditolak: Token Super Admin tidak dapat di-revoke." },
       { status: 403 },
     );
   }
 
-  // Already revoked → idempotent success
-  if (token.isRevoked) {
+  // ── PROTEKSI: Token bootstrap (generatedBy=null) tidak bisa direvoke ──
+  if (token.generatedBy === null) {
+    return NextResponse.json(
+      { message: "Aksi Ditolak: Token ini dibuat langsung oleh Sistem/Developer dan tidak dapat di-revoke." },
+      { status: 403 },
+    );
+  }
+
+  // ── SUPER_ADMIN: langsung revoke token ADMIN / HEAD_ADMIN ──
+  if (user.role === "SUPER_ADMIN") {
+    if (token.isRevoked) {
+      return NextResponse.json({ message: "Token sudah direvoke" });
+    }
+
+    const updated = await prisma.tokenAdmin.update({
+      where: { id },
+      data: { isRevoked: true, revokedAt: new Date() },
+    });
+
+    await logAktivitas({
+      adminId: user.id,
+      aksi: "REVOKE_TOKEN",
+      entityType: "TokenAdmin",
+      entityId: updated.id,
+      tokenId: updated.id,
+      dataBefore: { isRevoked: false },
+      dataAfter: { isRevoked: true, revokedAt: updated.revokedAt },
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: "Token direvoke langsung oleh SUPER_ADMIN.",
+    });
+
     return NextResponse.json({
-      message: "Token sudah direvoke",
-      data: {
-        id: token.id,
-        tokenRole: token.tokenRole,
-        adminId: token.adminId,
-        generatedBy: token.generatedBy,
-        isRevoked: token.isRevoked,
-        revokedAt: token.revokedAt,
-        createdAt: token.createdAt,
-        expiredAt: token.expiredAt,
-        isPermanent: token.isPermanent,
-        isSingleUse: token.isSingleUse,
-        claimedAt: token.claimedAt,
-      },
+      message: "Token berhasil direvoke",
+      data: { id: updated.id, isRevoked: updated.isRevoked, revokedAt: updated.revokedAt },
     });
   }
 
-  const updated = await prisma.tokenAdmin.update({
-    where: { id },
-    data: {
-      isRevoked: true,
-      revokedAt: new Date(),
-    },
-  });
+  // ── HEAD_ADMIN: tidak boleh revoke token milik dirinya sendiri ──
+  if (token.adminId === user.id) {
+    return NextResponse.json(
+      { message: "Aksi Ditolak: Anda tidak dapat merevoke token milik Anda sendiri." },
+      { status: 403 },
+    );
+  }
 
-  // Audit log (best effort)
-  await logAktivitas({
-    adminId: user.id,
-    aksi: "REVOKE_TOKEN",
-    entityType: "TokenAdmin",
-    entityId: updated.id,
-    tokenId: updated.id,
-    dataBefore: {
-      id: token.id,
-      tokenRole: token.tokenRole,
-      adminId: token.adminId,
-      generatedBy: token.generatedBy,
-      isRevoked: token.isRevoked,
-      revokedAt: token.revokedAt,
-      createdAt: token.createdAt,
-      expiredAt: token.expiredAt,
-      isPermanent: token.isPermanent,
-      isSingleUse: token.isSingleUse,
-      claimedAt: token.claimedAt,
-    },
-    dataAfter: {
-      id: updated.id,
-      isRevoked: updated.isRevoked,
-      revokedAt: updated.revokedAt,
-    },
-    ipAddress: ip,
-    userAgent: ua,
-    keterangan:
-      "Token direvoke oleh HEAD_ADMIN (soft revoke, record tetap tersimpan untuk history).",
-  });
+  // ── HEAD_ADMIN: token ADMIN → langsung revoke ──
+  if (token.tokenRole === "ADMIN") {
+    if (token.isRevoked) {
+      return NextResponse.json({ message: "Token sudah direvoke" });
+    }
 
-  return NextResponse.json({
-    message: "Token berhasil direvoke",
-    data: {
-      id: updated.id,
-      tokenRole: updated.tokenRole,
-      adminId: updated.adminId,
-      generatedBy: updated.generatedBy,
-      isRevoked: updated.isRevoked,
-      revokedAt: updated.revokedAt,
-      createdAt: updated.createdAt,
-      expiredAt: updated.expiredAt,
-      isPermanent: updated.isPermanent,
-      isSingleUse: updated.isSingleUse,
-      claimedAt: updated.claimedAt,
-    },
-  });
+    const updated = await prisma.tokenAdmin.update({
+      where: { id },
+      data: { isRevoked: true, revokedAt: new Date() },
+    });
+
+    await logAktivitas({
+      adminId: user.id,
+      aksi: "REVOKE_TOKEN",
+      entityType: "TokenAdmin",
+      entityId: updated.id,
+      tokenId: updated.id,
+      dataBefore: { isRevoked: false },
+      dataAfter: { isRevoked: true, revokedAt: updated.revokedAt },
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: "Token ADMIN direvoke oleh HEAD_ADMIN.",
+    });
+
+    return NextResponse.json({
+      message: "Token berhasil direvoke",
+      data: { id: updated.id, isRevoked: updated.isRevoked, revokedAt: updated.revokedAt },
+    });
+  }
+
+  // ── HEAD_ADMIN: token HEAD_ADMIN lain → masuk antrian approval ──
+  if (token.tokenRole === "HEAD_ADMIN") {
+    if (token.isRevoked) {
+      return NextResponse.json({ message: "Token sudah direvoke" });
+    }
+
+    // Cek apakah sudah ada request pending untuk token ini
+    const existingPending = await prisma.requestApproval.findFirst({
+      where: {
+        tokenId: token.id,
+        jenis: "REVOKE_TOKEN_HEADADMIN",
+        status: "PENDING",
+      },
+    });
+
+    if (existingPending) {
+      return NextResponse.json(
+        { message: "Request revoke untuk token ini sudah ada dan sedang menunggu persetujuan Super Admin." },
+        { status: 409 },
+      );
+    }
+
+    const request = await prisma.requestApproval.create({
+      data: {
+        jenis: "REVOKE_TOKEN_HEADADMIN",
+        status: "PENDING",
+        tokenId: token.id,
+        diajukanOleh: user.id,
+      },
+    });
+
+    return NextResponse.json({
+      message: "Request revoke token HEAD_ADMIN berhasil diajukan. Menunggu persetujuan Super Admin.",
+      pending: true,
+      requestId: request.id,
+    }, { status: 202 });
+  }
+
+  return NextResponse.json({ message: "Aksi tidak valid" }, { status: 400 });
 }
 
 /**

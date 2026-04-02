@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
 
   const jwt = await signToken({
     id: admin.id,
-    role: admin.role === RoleAdmin.HEAD_ADMIN ? "HEAD_ADMIN" : "ADMIN",
+    role: admin.role === RoleAdmin.HEAD_ADMIN ? "HEAD_ADMIN" : admin.role === RoleAdmin.SUPER_ADMIN ? "SUPER_ADMIN" : "ADMIN",
   });
 
   await logAktivitas({
@@ -195,9 +195,11 @@ export async function POST(req: NextRequest) {
   });
 
   const redirect =
-    admin.role === RoleAdmin.HEAD_ADMIN
-      ? "/dashboard/headadmin"
-      : "/dashboard/admin";
+    admin.role === RoleAdmin.SUPER_ADMIN
+      ? "/dashboard/superadmin"
+      : admin.role === RoleAdmin.HEAD_ADMIN
+        ? "/dashboard/headadmin"
+        : "/dashboard/admin";
 
   const res = NextResponse.json({ redirect }, { status: 200 });
 
@@ -215,7 +217,7 @@ export async function POST(req: NextRequest) {
   }
 
   const roleCookie =
-    admin.role === RoleAdmin.HEAD_ADMIN ? "headadmin" : "admin";
+    admin.role === RoleAdmin.SUPER_ADMIN ? "superadmin" : admin.role === RoleAdmin.HEAD_ADMIN ? "headadmin" : "admin";
   res.cookies.set("role", roleCookie, {
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",

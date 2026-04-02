@@ -99,6 +99,29 @@ model Galeri {
 }
 
 // ─────────────────────────────────────────────────────────────
+// REQUEST APPROVAL (antrian untuk disetujui SUPER_ADMIN)
+// ─────────────────────────────────────────────────────────────
+model RequestApproval {
+  id             String         @id @default(uuid())
+  jenis          JenisRequest
+  status         StatusApproval @default(PENDING)
+  // Token yang terkait (untuk generate: token baru yg pending, untuk revoke: token yang diminta direvoke)
+  tokenId        String?
+  token          TokenAdmin?    @relation("RequestToken", fields: [tokenId], references: [id], onDelete: SetNull)
+  // Admin yang mengajukan request
+  diajukanOleh   String
+  pengaju        Admin          @relation("RequestDiajukan", fields: [diajukanOleh], references: [id], onDelete: Restrict)
+  // Super Admin yang memproses (null jika masih PENDING)
+  diprosesByAdmin String?
+  pemroses       Admin?         @relation("RequestDiproses", fields: [diprosesByAdmin], references: [id], onDelete: SetNull)
+  // Jika jenis = GENERATE, simpan plain token di sini (terenkripsi) agar bisa ditampilkan ke pengaju setelah approve
+  // null jika jenis = REVOKE
+  catatanAdmin   String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
 // TOKEN ADMIN
 // ─────────────────────────────────────────────────────────────
 model TokenAdmin {
@@ -124,6 +147,7 @@ model TokenAdmin {
   logAktivitas LogAktivitasAdmin[] @relation("TokenActivity")
   admin        Admin?              @relation("TokenOwner", fields: [adminId], references: [id], onDelete: SetNull)
   headAdmin    Admin?              @relation("TokenGenerator", fields: [generatedBy], references: [id], onDelete: SetNull)
+  requests     RequestApproval[]  @relation("RequestToken")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -136,6 +160,8 @@ model Admin {
   role           RoleAdmin             @default(ADMIN)
   // false = admin dinonaktifkan tanpa dihapus (data historis tetap ada)
   isActive       Boolean               @default(true)
+  // true = dibuat via bootstrap script (Developer / Super Admin)
+  isDeveloper    Boolean               @default(false)
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   blog           Blog[]
@@ -145,6 +171,10 @@ model Admin {
   logAktivitas   LogAktivitasAdmin[]
   tokenAdmin     TokenAdmin[]          @relation("TokenOwner")
   generatedToken TokenAdmin[]          @relation("TokenGenerator")
+  // Request yang diajukan oleh admin ini
+  requestDiajukan RequestApproval[]    @relation("RequestDiajukan")
+  // Request yang diproses oleh superadmin ini
+  requestDiproses RequestApproval[]    @relation("RequestDiproses")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -191,6 +221,7 @@ enum StatusBlog {
 enum RoleAdmin {
   ADMIN
   HEAD_ADMIN
+  SUPER_ADMIN
 }
 
 enum AksiAdmin {
@@ -212,6 +243,19 @@ enum AksiAdmin {
   TAMBAH_TINDAKLANJUT
   GENERATE_TOKEN
   REVOKE_TOKEN
+  APPROVE_REQUEST
+  REJECT_REQUEST
+}
+
+enum StatusApproval {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum JenisRequest {
+  GENERATE_TOKEN_HEADADMIN
+  REVOKE_TOKEN_HEADADMIN
 }
 
 enum Jurusan {

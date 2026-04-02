@@ -14,7 +14,7 @@ const secret = new TextEncoder().encode(secretValue);
 interface AppJWTPayload extends JoseJWTPayload {
   id: string;
   email?: string;
-  role: "MAHASISWA" | "ADMIN" | "HEAD_ADMIN";
+  role: "MAHASISWA" | "ADMIN" | "HEAD_ADMIN" | "SUPER_ADMIN";
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ export async function verifyToken(
  */
 export async function signToken(payload: {
   id: string;
-  role: "MAHASISWA" | "ADMIN" | "HEAD_ADMIN";
+  role: "MAHASISWA" | "ADMIN" | "HEAD_ADMIN" | "SUPER_ADMIN";
 }): Promise<string> {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -89,7 +89,7 @@ export function hashToken(token: string): string {
  * Token ini ditampilkan SEKALI ke headadmin saat generate,
  * lalu tidak pernah disimpan dalam bentuk plain di DB.
  */
-export function generateAdminToken(role: "ADMIN" | "HEAD_ADMIN"): string {
+export function generateAdminToken(role: "ADMIN" | "HEAD_ADMIN" | "SUPER_ADMIN"): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const length = role === "ADMIN" ? 8 : 16;

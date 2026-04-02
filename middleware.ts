@@ -12,7 +12,8 @@ export function middleware(req: NextRequest) {
 
     if (
       pathname.startsWith('/dashboard/admin') ||
-      pathname.startsWith('/dashboard/headadmin')
+      pathname.startsWith('/dashboard/headadmin') ||
+      pathname.startsWith('/dashboard/superadmin')
     ) {
       return NextResponse.redirect(new URL('/login/admin', req.url))
     }
@@ -30,6 +31,10 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard/headadmin', req.url))
   }
 
+  if (role === 'superadmin' && !pathname.startsWith('/dashboard/superadmin')) {
+    return NextResponse.redirect(new URL('/dashboard/superadmin', req.url))
+  }
+
   return NextResponse.next()
 }
 
@@ -38,5 +43,6 @@ export const config = {
     '/dashboard/mahasiswa/:path*',
     '/dashboard/admin/:path*',
     '/dashboard/headadmin/:path*',
+    '/dashboard/superadmin/:path*',
   ],
 }

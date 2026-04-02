@@ -19,7 +19,9 @@ export type ActivityAction =
   | "UPDATE_STATUS_LAPORAN"
   | "TAMBAH_TINDAKLANJUT"
   | "GENERATE_TOKEN"
-  | "REVOKE_TOKEN";
+  | "REVOKE_TOKEN"
+  | "APPROVE_REQUEST"
+  | "REJECT_REQUEST";
 
 export interface LogOptions {
   adminId: string;
