@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function MahasiswaLoginPage() {
   const router = useRouter();
@@ -112,6 +113,15 @@ export default function MahasiswaLoginPage() {
               {loading ? "Memproses..." : "Masuk"}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <Link
+              href="/dashboard"
+              className="text-sm text-white/60 transition hover:text-white hover:underline"
+            >
+              &larr; Kembali ke Dashboard Umum
+            </Link>
+          </div>
         </div>
       </div>
     </main>

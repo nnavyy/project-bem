@@ -190,7 +190,7 @@ export default function Sidebar() {
     } catch {
       // ignore
     }
-    router.push("/login/admin");
+    router.push("/dashboard");
     router.refresh();
   }
 

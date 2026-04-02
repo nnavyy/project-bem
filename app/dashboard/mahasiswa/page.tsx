@@ -122,13 +122,13 @@ export default function DashboardMahasiswaPage() {
     }
   }
 
-  function handleLogout() {
-    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie =
-      "next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie =
-      "__Secure-next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    router.push("/login/mahasiswa");
+  async function handleLogout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch {
+      // abaikan error
+    }
+    window.location.href = "/login/mahasiswa";
   }
 
   function renderStatusBadge(status?: Laporan["status"]) {

@@ -44,11 +44,12 @@ export default function Navbar({ showLogin = true }: NavbarProps) {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function logout() {
-    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie =
-      "__Secure-next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  async function logout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch {
+      // ignore
+    }
     window.location.href = "/dashboard";
   }
 

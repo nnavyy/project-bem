@@ -247,7 +247,7 @@ export default function Sidebar() {
 
   async function handleLogout() {
     try { await fetch("/api/logout", { method: "POST" }); } catch { /* ignore */ }
-    router.push("/login/admin");
+    router.push("/dashboard");
     router.refresh();
   }
 
