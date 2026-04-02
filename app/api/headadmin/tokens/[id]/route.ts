@@ -39,6 +39,13 @@ export async function PATCH(
     );
   }
 
+  if (token.generatedBy === null) {
+    return NextResponse.json(
+      { message: "Aksi Ditolak: Token ini dibuat langsung oleh Sistem/Developer dan bersifat permanen (tidak dapat di-revoke)." },
+      { status: 403 },
+    );
+  }
+
   // Already revoked → idempotent success
   if (token.isRevoked) {
     return NextResponse.json({

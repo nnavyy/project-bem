@@ -62,6 +62,16 @@ export default function BlogListingPage() {
     <main className="bg-[#0f172a] text-white min-h-screen">
       <Navbar />
 
+      {/* ── Top Navigation (Mobile friendly UI) ───────────────── */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 pt-6 -mb-6 md:pt-10 md:-mb-10">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm border border-white/5 w-fit">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+          Kembali ke Beranda
+        </Link>
+      </div>
+
       {/* ── Hero / Jumbotron ──────────────────────────────────── */}
       <section className="relative overflow-hidden">
         {/* Grid pattern background */}

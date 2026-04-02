@@ -1,19 +1,24 @@
+import Link from "next/link";
+
 export default function LayananKami() {
   const layanan = [
     {
       title: "Suaraku ITESA",
       desc: "Wadah resmi bagi mahasiswa untuk menyampaikan aspirasi, kritik, dan keluhan secara aman dan terstruktur.",
       cta: "Sampaikan Aspirasi",
+      href: "/login/mahasiswa"
     },
     {
       title: "Blog & Berita",
       desc: "Informasi terbaru mengenai kegiatan, pengumuman resmi, serta dokumentasi program kerja BEM ITESA.",
       cta: "Baca Berita",
+      href: "/dashboard/blog"
     },
     {
       title: "Portofolio BEM",
       desc: "Dokumentasi program kerja, divisi, dan kontribusi BEM ITESA sebagai bentuk transparansi organisasi.",
       cta: "Lihat Portofolio",
+      href: "/dashboard/portofolio"
     },
   ];
 
@@ -26,10 +31,12 @@ export default function LayananKami() {
 
         <div className="mt-14 grid md:grid-cols-3 gap-8">
           {layanan.map((item) => (
-            <div
+            <Link
+              href={item.href}
               key={item.title}
               className="
                 group
+                block
                 h-full
                 rounded-2xl
                 border border-white/10
@@ -48,7 +55,7 @@ export default function LayananKami() {
                 {item.desc}
               </p>
 
-              <button
+              <div
                 className="
                   mt-6
                   text-sm font-semibold
@@ -61,8 +68,8 @@ export default function LayananKami() {
               >
                 {item.cta}
                 <span className="transition group-hover:translate-x-1">→</span>
-              </button>
-            </div>
+              </div>
+            </Link>
           ))}
         </div>
       </div>
