@@ -25,6 +25,9 @@ export default function Navbar({ showLogin = true }: NavbarProps) {
         } else {
           setIsAuthenticated(false);
           setAuthRole("");
+          if (res.status === 401 || res.status === 403 || res.status === 404) {
+            fetch("/api/logout", { method: "POST" }).catch(() => {});
+          }
         }
       } catch {
         if (!isMounted) return;

@@ -292,12 +292,22 @@ export default function Sidebar() {
   // Fetch user profile
   useEffect(() => {
     fetch("/api/me", { cache: "no-store" })
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          if (r.status === 401 || r.status === 403 || r.status === 404) {
+            await fetch("/api/logout", { method: "POST" });
+            router.replace("/dashboard");
+            router.refresh();
+            return null;
+          }
+        }
+        return r.json();
+      })
       .then((d) => {
         if (d?.profile) setUser(d.profile as UserProfile);
       })
       .catch(() => {});
-  }, []);
+  }, [router]);
 
   // Close mobile sidebar on route change
   useEffect(() => {

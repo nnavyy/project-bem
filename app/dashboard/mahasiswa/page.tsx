@@ -65,6 +65,13 @@ export default function DashboardMahasiswaPage() {
   async function loadMe() {
     try {
       const res = await fetch("/api/me", { cache: "no-store" });
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403 || res.status === 404) {
+          await fetch("/api/logout", { method: "POST" });
+          window.location.href = "/login/mahasiswa";
+          return;
+        }
+      }
       const data = (await res.json()) as MeResponse;
       if (res.ok && data?.profile?.nama) {
         setNamaMahasiswa(data.profile.nama);
