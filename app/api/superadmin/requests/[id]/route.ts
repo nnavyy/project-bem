@@ -281,3 +281,61 @@ export async function PATCH(
     );
   }
 }
+
+/**
+ * DELETE /api/superadmin/requests/[id]
+ * Hapus permanen request yang sudah berstatus APPROVED atau REJECTED.
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { ip, ua } = getRequestMeta(req);
+    const user = await verifyToken(req);
+
+    if (!user || user.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    const request = await prisma.requestApproval.findUnique({
+      where: { id },
+    });
+
+    if (!request) {
+      return NextResponse.json(
+        { message: "Request tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
+    if (request.status === "PENDING") {
+      return NextResponse.json(
+        { message: "Tidak dapat menghapus request yang masih PENDING." },
+        { status: 400 },
+      );
+    }
+
+    await prisma.$executeRaw`DELETE FROM "RequestApproval" WHERE id = ${id}`;
+
+    await logAktivitas({
+      adminId: user.id,
+      aksi: "DELETE_REQUEST" as any,
+      entityType: "RequestApproval",
+      entityId: id,
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: `Request approval riwayat (${request.jenis}) berhasil dihapus.`,
+    });
+
+    return NextResponse.json({ message: "Riwayat request berhasil dihapus permanen." });
+  } catch (err: any) {
+    console.error("[Request Delete Error]", err);
+    return NextResponse.json(
+      { message: "Terjadi kesalahan saat menghapus history request." },
+      { status: 500 },
+    );
+  }
+}

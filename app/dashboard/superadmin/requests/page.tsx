@@ -206,17 +206,22 @@ function TokenRevealModal({
 function RequestCard({
   req,
   onProcess,
+  onDelete,
   processing,
+  deleting,
 }: {
   req: RequestItem;
   onProcess: (id: string, action: "APPROVE" | "REJECT") => void;
+  onDelete: (id: string) => void;
   processing: string | null;
+  deleting: string | null;
 }) {
   const isGenerateReq = req.jenis === "GENERATE_TOKEN_HEADADMIN";
   const isRevokeSuper = req.jenis === "REVOKE_TOKEN_SUPERADMIN";
   const isCreateHead = req.jenis === "CREATE_HEADADMIN";
   const isPending = req.status === "PENDING";
   const isProcessing = processing === req.id;
+  const isDeleting = deleting === req.id;
 
   return (
     <div
@@ -288,22 +293,10 @@ function RequestCard({
       {/* REVOKE_TOKEN_SUPERADMIN warning banner */}
       {isRevokeSuper && isPending && (
         <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 text-red-400 text-xs mb-4">
-          <svg
-            className="w-4 h-4 shrink-0 mt-0.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.8}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-            />
-          </svg>
+          <IconWarn />
           <span>
             Seseorang mencoba merevoke token Super Admin. Ini adalah notifikasi
-            keamanan — klik &quot;Tutup Notifikasi&quot; setelah ditinjau.
+            keamanan — klik "Tutup Notifikasi" setelah ditinjau.
           </span>
         </div>
       )}
@@ -370,34 +363,44 @@ function RequestCard({
           </div>
         )}
 
-      {/* Action buttons (only for PENDING) */}
-      {isPending && (
-        <div className="flex items-center gap-2 justify-end pt-2 border-t border-white/5">
-          {!isRevokeSuper && (
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 justify-end pt-2 border-t border-white/5">
+        {isPending ? (
+          <>
+            {!isRevokeSuper && (
+              <button
+                onClick={() => onProcess(req.id, "APPROVE")}
+                disabled={isProcessing}
+                className="flex items-center gap-1.5 text-sm text-[#0f172a] bg-emerald-400 hover:bg-emerald-300 px-4 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-50"
+              >
+                <IconCheck />
+                {isProcessing ? "Memproses..." : "Setujui"}
+              </button>
+            )}
             <button
-              onClick={() => onProcess(req.id, "APPROVE")}
+              onClick={() => onProcess(req.id, "REJECT")}
               disabled={isProcessing}
-              className="flex items-center gap-1.5 text-sm text-[#0f172a] bg-emerald-400 hover:bg-emerald-300 px-4 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className={[
+                "flex items-center gap-1.5 text-sm border px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50",
+                isRevokeSuper
+                  ? "text-white bg-red-500/20 border-red-500/30 hover:bg-red-500/30"
+                  : "text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/20",
+              ].join(" ")}
             >
-              <IconCheck />
-              {isProcessing ? "Memproses..." : "Setujui"}
+              <IconX />
+              {isRevokeSuper ? "Tutup Notifikasi" : "Tolak"}
             </button>
-          )}
+          </>
+        ) : (
           <button
-            onClick={() => onProcess(req.id, "REJECT")}
-            disabled={isProcessing}
-            className={[
-              "flex items-center gap-1.5 text-sm border px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50",
-              isRevokeSuper
-                ? "text-white bg-red-500/20 border-red-500/30 hover:bg-red-500/30"
-                : "text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/20",
-            ].join(" ")}
+            onClick={() => onDelete(req.id)}
+            disabled={isDeleting}
+            className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
           >
-            <IconX />
-            {isRevokeSuper ? "Tutup Notifikasi" : "Tolak"}
+            {isDeleting ? "Menghapus..." : "Hapus History"}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -409,6 +412,7 @@ export default function RequestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [filter, setFilter] = useState<
     "ALL" | "PENDING" | "APPROVED" | "REJECTED"
   >("ALL");
@@ -470,6 +474,26 @@ export default function RequestsPage() {
       alert("Gagal menghubungi server.");
     } finally {
       setProcessing(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Yakin ingin menghapus riwayat request ini permanen?")) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/superadmin/requests/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setRequests((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        const data = await res.json();
+        alert(data.message ?? "Gagal menghapus history request.");
+      }
+    } catch {
+      alert("Gagal menghubungi server.");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -574,7 +598,9 @@ export default function RequestsPage() {
               key={req.id}
               req={req}
               onProcess={handleProcess}
+              onDelete={handleDelete}
               processing={processing}
+              deleting={deleting}
             />
           ))}
         </div>

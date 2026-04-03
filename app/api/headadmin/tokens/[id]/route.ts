@@ -295,13 +295,11 @@ export async function DELETE(
   }
 
   try {
-    // Unlink RequestApproval first
-    await prisma.requestApproval.updateMany({
-      where: { tokenId: id },
-      data: { tokenId: null },
-    });
+    // Unlink RequestApproval first menggunakan raw query
+    await prisma.$executeRaw`UPDATE "RequestApproval" SET "tokenId" = null WHERE "tokenId" = ${id}`;
 
-    await prisma.tokenAdmin.delete({ where: { id } });
+    // Hapus token menggunakan raw query
+    await prisma.$executeRaw`DELETE FROM "TokenAdmin" WHERE id = ${id}`;
 
     await logAktivitas({
       adminId: user.id,

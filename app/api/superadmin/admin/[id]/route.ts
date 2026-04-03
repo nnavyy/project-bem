@@ -57,72 +57,45 @@ export async function DELETE(
   }
 
   try {
+    // Menggunakan executeRaw untuk semua bulk update/delete karena PrismaNeonHttp
+    // akan melempar error "Transactions are not supported in HTTP mode" pada updateMany/deleteMany
+
     // 1. Revoke semua token aktif admin ini
-    await prisma.tokenAdmin.updateMany({
-      where: { adminId: id, isRevoked: false },
-      data: { isRevoked: true, revokedAt: new Date() },
-    });
+    await prisma.$executeRaw`UPDATE "TokenAdmin" SET "isRevoked" = true, "revokedAt" = NOW() WHERE "adminId" = ${id} AND "isRevoked" = false`;
 
-    // 2. Unlink dari laporan (set ditindakOleh = null) — onDelete: SetNull
-    await prisma.laporan.updateMany({
-      where: { ditindakOleh: id },
-      data: { ditindakOleh: null },
-    });
+    // 2. Unlink dari laporan (set ditindakOleh = null)
+    await prisma.$executeRaw`UPDATE "Laporan" SET "ditindakOleh" = null WHERE "ditindakOleh" = ${id}`;
 
-    // 3. Hapus tindakLanjutLaporan yang dibuat oleh admin ini — onDelete: Restrict
-    await prisma.tindakLanjutLaporan.deleteMany({
-      where: { adminId: id },
-    });
+    // 3. Hapus tindakLanjutLaporan yang dibuat oleh admin ini
+    await prisma.$executeRaw`DELETE FROM "TindakLanjutLaporan" WHERE "adminId" = ${id}`;
 
-    // 4. Unlink blog (set penulisId = null) — onDelete: SetNull
-    await prisma.blog.updateMany({
-      where: { penulisId: id },
-      data: { penulisId: null },
-    });
+    // 4. Unlink blog
+    await prisma.$executeRaw`UPDATE "Blog" SET "penulisId" = null WHERE "penulisId" = ${id}`;
 
-    // 5. Hapus galeri dari portofolio milik admin ini, lalu hapus portofolionya — onDelete: Restrict
+    // 5. Hapus galeri dari portofolio milik admin ini, lalu hapus portofolionya
     const portofolios = await prisma.portofolio.findMany({
       where: { adminId: id },
       select: { id: true },
     });
-    if (portofolios.length > 0) {
-      const portofolioIds = portofolios.map((p) => p.id);
-      await prisma.galeri.deleteMany({
-        where: { portofolioId: { in: portofolioIds } },
-      });
-      await prisma.portofolio.deleteMany({
-        where: { adminId: id },
-      });
+    for (const p of portofolios) {
+      await prisma.$executeRaw`DELETE FROM "Galeri" WHERE "portofolioId" = ${p.id}`;
+      await prisma.$executeRaw`DELETE FROM "Portofolio" WHERE id = ${p.id}`;
     }
 
-    // 6. Hapus log aktivitas admin ini — onDelete: Restrict
-    await prisma.logAktivitasAdmin.deleteMany({
-      where: { adminId: id },
-    });
+    // 6. Hapus log aktivitas admin ini
+    await prisma.$executeRaw`DELETE FROM "LogAktivitasAdmin" WHERE "adminId" = ${id}`;
 
-    // 7. Unlink token yang di-generate oleh admin (generatedBy) — onDelete: SetNull
-    await prisma.tokenAdmin.updateMany({
-      where: { generatedBy: id },
-      data: { generatedBy: null },
-    });
+    // 7. Unlink token yang di-generate oleh admin
+    await prisma.$executeRaw`UPDATE "TokenAdmin" SET "generatedBy" = null WHERE "generatedBy" = ${id}`;
 
-    // 8. Unlink token yang dimiliki admin (adminId) — onDelete: SetNull
-    await prisma.tokenAdmin.updateMany({
-      where: { adminId: id },
-      data: { adminId: null },
-    });
+    // 8. Unlink token yang dimiliki admin
+    await prisma.$executeRaw`UPDATE "TokenAdmin" SET "adminId" = null WHERE "adminId" = ${id}`;
 
-    // 9. Handle request approval — diajukanOleh onDelete: Restrict
-    // Reject pending ones and delete all requests by this admin
-    await prisma.requestApproval.deleteMany({
-      where: { diajukanOleh: id },
-    });
+    // 9. Handle request approval — diajukanOleh
+    await prisma.$executeRaw`DELETE FROM "RequestApproval" WHERE "diajukanOleh" = ${id}`;
 
-    // 10. Unlink request yang diproses oleh admin ini — onDelete: SetNull
-    await prisma.requestApproval.updateMany({
-      where: { diprosesByAdmin: id },
-      data: { diprosesByAdmin: null },
-    });
+    // 10. Unlink request yang diproses oleh admin ini
+    await prisma.$executeRaw`UPDATE "RequestApproval" SET "diprosesByAdmin" = null WHERE "diprosesByAdmin" = ${id}`;
 
     // Log before delete (use superadmin's own id, not the target's)
     await logAktivitas({
@@ -143,9 +116,7 @@ export async function DELETE(
       keterangan: `Akun ${target.role} "@${target.username}" (${target.nama}) dihapus permanen oleh Super Admin.`,
     });
 
-    // 11. Hapus admin secara manual menggunakan executeRaw untuk menghindari 
-    // error "Transactions are not supported in HTTP mode" dari PrismaNeonHttp.
-    // (Karena kita sudah membersihkan semua table terkait secara manual di atas, ini aman)
+    // 11. Hapus admin secara manual
     await prisma.$executeRaw`DELETE FROM "Admin" WHERE id = ${id}`;
 
     return NextResponse.json({
