@@ -115,6 +115,53 @@ export async function PATCH(
     }
   }
 
+  // ── CREATE_HEADADMIN ──
+  if (request.jenis === "CREATE_HEADADMIN") {
+    if (body.action === "APPROVE" && request.catatanAdmin) {
+      // Parse data akun dari catatanAdmin
+      const accountData = JSON.parse(request.catatanAdmin) as { username: string; nama: string; role: string };
+      
+      // Cek apakah username sudah terpakai (mungkin sudah dibuat saat menunggu approval)
+      const existing = await prisma.admin.findUnique({ where: { username: accountData.username } });
+      if (existing) {
+        return NextResponse.json(
+          { message: `Username "${accountData.username}" sudah digunakan. Request tidak bisa diproses.` },
+          { status: 409 },
+        );
+      }
+
+      // Buat akun HEAD_ADMIN
+      const created = await prisma.admin.create({
+        data: {
+          username: accountData.username,
+          nama: accountData.nama,
+          role: "HEAD_ADMIN",
+          isActive: true,
+        },
+      });
+
+      await logAktivitas({
+        adminId: user.id,
+        aksi: "APPROVE_REQUEST",
+        entityType: "Admin",
+        entityId: created.id,
+        ipAddress: ip,
+        userAgent: ua,
+        keterangan: `Request pembuatan akun HEAD_ADMIN "${accountData.username}" dari @${request.pengaju.username} disetujui. Akun berhasil dibuat.`,
+      });
+    } else {
+      await logAktivitas({
+        adminId: user.id,
+        aksi: "REJECT_REQUEST",
+        entityType: "RequestApproval",
+        entityId: id,
+        ipAddress: ip,
+        userAgent: ua,
+        keterangan: `Request pembuatan akun HEAD_ADMIN dari @${request.pengaju.username} ditolak.`,
+      });
+    }
+  }
+
   // Update status request
   const updated = await prisma.requestApproval.update({
     where: { id },

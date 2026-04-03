@@ -99,6 +99,12 @@ export async function GET(req: NextRequest) {
           ...(toDate && { lte: toDate }),
         },
       }),
+      // HEAD_ADMIN tidak boleh melihat log SUPER_ADMIN
+      ...(user.role === "HEAD_ADMIN" && {
+        admin: {
+          role: { in: ["ADMIN", "HEAD_ADMIN"] },
+        },
+      }),
     };
 
     // ── Query (count + paginated items in parallel) ───────────

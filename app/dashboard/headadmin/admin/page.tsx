@@ -122,6 +122,7 @@ function CreateAdminModal({
 }) {
   const [username, setUsername] = useState("");
   const [nama, setNama] = useState("");
+  const [role, setRole] = useState<"ADMIN" | "HEAD_ADMIN">("ADMIN");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -137,12 +138,16 @@ function CreateAdminModal({
       const res = await fetch("/api/headadmin/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), nama: nama.trim() }),
+        body: JSON.stringify({ username: username.trim(), nama: nama.trim(), role }),
       });
       const data = await res.json();
-      if (!res.ok) {
+      if (!res.ok && res.status !== 202) {
         setError(data.message ?? "Terjadi kesalahan.");
         return;
+      }
+      if (res.status === 202) {
+        // Pending approval
+        alert(data.message || "Request berhasil diajukan, menunggu approval Super Admin.");
       }
       onSuccess();
       onClose();
@@ -160,7 +165,7 @@ function CreateAdminModal({
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-white font-semibold text-base">Tambah Admin Baru</h2>
-            <p className="text-white/40 text-xs mt-0.5">Akun baru dengan role ADMIN</p>
+            <p className="text-white/40 text-xs mt-0.5">Buat akun baru dengan role yang dipilih</p>
           </div>
           <button
             onClick={onClose}
@@ -197,6 +202,47 @@ function CreateAdminModal({
             />
           </div>
 
+          <div>
+            <label className="block text-sm text-white/70 mb-1.5">Role</label>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative flex items-center justify-center w-4 h-4">
+                  <input
+                    type="radio"
+                    name="createRole"
+                    className="peer appearance-none w-4 h-4 rounded-full border border-white/20 checked:border-blue-400 cursor-pointer transition-colors"
+                    checked={role === "ADMIN"}
+                    onChange={() => setRole("ADMIN")}
+                  />
+                  <div className="absolute w-2 h-2 rounded-full bg-blue-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                </div>
+                <span className="text-sm text-white/80 group-hover:text-white transition-colors">ADMIN</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative flex items-center justify-center w-4 h-4">
+                  <input
+                    type="radio"
+                    name="createRole"
+                    className="peer appearance-none w-4 h-4 rounded-full border border-white/20 checked:border-purple-400 cursor-pointer transition-colors"
+                    checked={role === "HEAD_ADMIN"}
+                    onChange={() => setRole("HEAD_ADMIN")}
+                  />
+                  <div className="absolute w-2 h-2 rounded-full bg-purple-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                </div>
+                <span className="text-sm text-white/80 group-hover:text-white transition-colors">HEAD_ADMIN</span>
+              </label>
+            </div>
+          </div>
+
+          {role === "HEAD_ADMIN" && (
+            <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2.5 text-yellow-400 text-xs">
+              <IconWarn />
+              <span>
+                Pembuatan akun HEAD_ADMIN memerlukan persetujuan Super Admin. Request akan masuk ke antrian approval.
+              </span>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 text-red-400 text-sm">
               <IconWarn />
@@ -217,7 +263,7 @@ function CreateAdminModal({
               disabled={loading}
               className="flex-1 bg-white text-[#0f172a] text-sm font-semibold rounded-lg px-4 py-2 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? "Membuat..." : "Buat Admin"}
+              {loading ? "Membuat..." : `Buat ${role === "HEAD_ADMIN" ? "Head Admin" : "Admin"}`}
             </button>
           </div>
         </form>
@@ -306,7 +352,10 @@ function GenerateTokenModal({
                 checked={isPermanent}
                 onChange={(e) => {
                   setIsPermanent(e.target.checked);
-                  if (e.target.checked) setExpiredAt("");
+                  if (e.target.checked) {
+                    setExpiredAt("");
+                    setIsSingleUse(false);
+                  }
                 }}
                 className="sr-only"
               />
@@ -339,7 +388,12 @@ function GenerateTokenModal({
               <input
                 type="checkbox"
                 checked={isSingleUse}
-                onChange={(e) => setIsSingleUse(e.target.checked)}
+                onChange={(e) => {
+                  setIsSingleUse(e.target.checked);
+                  if (e.target.checked) {
+                    setIsPermanent(false);
+                  }
+                }}
                 className="sr-only"
               />
               <div
@@ -555,8 +609,18 @@ export default function AdminManagementPage() {
     fetch("/api/headadmin/admin")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data)) setAdmins(data);
-        else setError(true);
+        if (Array.isArray(data)) {
+          // Urutkan admin: yang aktif ditaruh di atas, nonaktif di bawah
+          const sorted = data.sort((a, b) => {
+            if (a.isActive === b.isActive) {
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+            return a.isActive ? -1 : 1;
+          });
+          setAdmins(sorted);
+        } else {
+          setError(true);
+        }
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -647,6 +711,9 @@ export default function AdminManagementPage() {
                   Nama
                 </th>
                 <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
+                  Role
+                </th>
+                <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
                   Status
                 </th>
                 <th className="text-left text-white/50 text-xs font-medium uppercase tracking-wider py-3 px-4">
@@ -665,13 +732,13 @@ export default function AdminManagementPage() {
                 Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="text-white/40 text-sm text-center py-12">
+                  <td colSpan={8} className="text-white/40 text-sm text-center py-12">
                     Gagal memuat data admin. Silakan muat ulang halaman.
                   </td>
                 </tr>
               ) : admins.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-white/40 text-sm text-center py-12">
+                  <td colSpan={8} className="text-white/40 text-sm text-center py-12">
                     Belum ada admin terdaftar.
                   </td>
                 </tr>
@@ -691,6 +758,18 @@ export default function AdminManagementPage() {
 
                     {/* Nama */}
                     <td className="py-3 px-4 text-white/70">{admin.nama}</td>
+
+                    {/* Role */}
+                    <td className="py-3 px-4">
+                      <span className={[
+                        "text-xs px-2 py-0.5 rounded-full font-medium",
+                        admin.role === "HEAD_ADMIN"
+                          ? "bg-purple-500/20 text-purple-400"
+                          : "bg-blue-500/20 text-blue-400",
+                      ].join(" ")}>
+                        {admin.role === "HEAD_ADMIN" ? "Head Admin" : "Admin"}
+                      </span>
+                    </td>
 
                     {/* Status */}
                     <td className="py-3 px-4">
@@ -747,8 +826,8 @@ export default function AdminManagementPage() {
                         {/* Generate Token */}
                         <button
                           onClick={() => setGenerateTarget(admin)}
-                          disabled={!admin.isActive}
-                          title={admin.isActive ? "Generate Token" : "Admin nonaktif"}
+                          disabled={!admin.isActive || admin.role === "HEAD_ADMIN"}
+                          title={admin.role === "HEAD_ADMIN" ? "Tidak ada akses mengedit role setara" : !admin.isActive ? "Admin nonaktif" : "Generate Token"}
                           className="flex items-center gap-1.5 border border-white/20 text-white text-xs rounded-lg px-2.5 py-1.5 hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <IconKey />
@@ -758,13 +837,14 @@ export default function AdminManagementPage() {
                         {/* Toggle Active */}
                         <button
                           onClick={() => handleToggleActive(admin)}
-                          disabled={togglingId === admin.id}
+                          disabled={togglingId === admin.id || admin.role === "HEAD_ADMIN"}
+                          title={admin.role === "HEAD_ADMIN" ? "Tidak ada akses mengedit role setara" : ""}
                           className={[
                             "text-xs rounded-lg px-2.5 py-1.5 transition-colors",
                             admin.isActive
                               ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
                               : "text-green-400 hover:text-green-300 hover:bg-green-500/10",
-                            togglingId === admin.id ? "opacity-50 cursor-not-allowed" : "",
+                            togglingId === admin.id || admin.role === "HEAD_ADMIN" ? "opacity-50 cursor-not-allowed" : "",
                           ].join(" ")}
                         >
                           {togglingId === admin.id

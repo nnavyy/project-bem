@@ -441,6 +441,7 @@ function GenerateTokenPanel({
   onResult: (result: GenerateTokenResult) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [tokenRole, setTokenRole] = useState<"ADMIN" | "HEAD_ADMIN">("ADMIN");
   const [selectedAdminId, setSelectedAdminId] = useState("");
   const [isPermanent, setIsPermanent] = useState(false);
   const [isSingleUse, setIsSingleUse] = useState(false);
@@ -448,14 +449,14 @@ function GenerateTokenPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const activeAdmins = admins.filter((a) => a.isActive && a.role === "ADMIN");
+  const activeAdmins = admins.filter((a) => a.isActive && a.role === tokenRole);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
     const body: Record<string, unknown> = {
-      tokenRole: "ADMIN",
+      tokenRole: tokenRole,
       isPermanent,
       isSingleUse,
     };
@@ -476,6 +477,7 @@ function GenerateTokenPanel({
         return;
       }
       // Reset form
+      setTokenRole("ADMIN");
       setSelectedAdminId("");
       setIsPermanent(false);
       setIsSingleUse(false);
@@ -519,8 +521,49 @@ function GenerateTokenPanel({
         <div className="border-t border-white/10 px-5 py-5">
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              {/* Admin selector */}
+              {/* Token Role selector */}
               <div className="sm:col-span-2">
+                <label className="block text-sm text-white/70 mb-1.5">
+                  Role Token {tokenRole === "HEAD_ADMIN" && <span className="ml-2 text-xs text-yellow-400 font-normal bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">Butuh Approval Super Admin</span>} <span className="text-red-400">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className="relative flex items-center justify-center w-4 h-4">
+                      <input 
+                        type="radio" 
+                        name="tokenRole"
+                        className="peer appearance-none w-4 h-4 rounded-full border border-white/20 checked:border-blue-400 cursor-pointer transition-colors"
+                        checked={tokenRole === "ADMIN"}
+                        onChange={() => {
+                          setTokenRole("ADMIN");
+                          setSelectedAdminId(""); // reset selected admin
+                        }}
+                      />
+                      <div className="absolute w-2 h-2 rounded-full bg-blue-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                    </div>
+                    <span className="text-sm text-white/80 group-hover:text-white transition-colors">ADMIN</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className="relative flex items-center justify-center w-4 h-4">
+                      <input 
+                        type="radio" 
+                        name="tokenRole"
+                        className="peer appearance-none w-4 h-4 rounded-full border border-white/20 checked:border-purple-400 cursor-pointer transition-colors"
+                        checked={tokenRole === "HEAD_ADMIN"}
+                        onChange={() => {
+                          setTokenRole("HEAD_ADMIN");
+                          setSelectedAdminId(""); // reset selected admin
+                        }}
+                      />
+                      <div className="absolute w-2 h-2 rounded-full bg-purple-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                    </div>
+                    <span className="text-sm text-white/80 group-hover:text-white transition-colors">HEAD_ADMIN</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Admin selector */}
+              <div className="sm:col-span-2 mt-2">
                 <label className="block text-sm text-white/70 mb-1.5">
                   Admin Penerima{" "}
                   <span className="text-white/30 font-normal">(opsional)</span>
@@ -556,7 +599,10 @@ function GenerateTokenPanel({
                   checked={isPermanent}
                   onChange={(v) => {
                     setIsPermanent(v);
-                    if (v) setExpiredAt("");
+                    if (v) {
+                      setExpiredAt("");
+                      setIsSingleUse(false);
+                    }
                   }}
                   label="Token Permanen"
                   sub="Tidak ada tanggal kadaluarsa"
@@ -567,7 +613,12 @@ function GenerateTokenPanel({
               <div className="flex items-start">
                 <Checkbox
                   checked={isSingleUse}
-                  onChange={setIsSingleUse}
+                  onChange={(v) => {
+                    setIsSingleUse(v);
+                    if (v) {
+                      setIsPermanent(false);
+                    }
+                  }}
                   label="Single Use"
                   sub="Hangus setelah 1x login"
                 />
@@ -674,13 +725,25 @@ export default function TokenManagementPage() {
     fetchData();
   }, [fetchData]);
 
-  // Client-side filtered tokens
-  const filteredTokens = tokens.filter((t) => {
-    const matchRole = filterRole === "all" || t.tokenRole === filterRole;
-    const status = getTokenStatus(t);
-    const matchStatus = filterStatus === "all" || status === filterStatus;
-    return matchRole && matchStatus;
-  });
+  // Client-side filtered and sorted tokens
+  const filteredTokens = tokens
+    .filter((t) => {
+      const matchRole = filterRole === "all" || t.tokenRole === filterRole;
+      const status = getTokenStatus(t);
+      const matchStatus = filterStatus === "all" || status === filterStatus;
+      return matchRole && matchStatus;
+    })
+    .sort((a, b) => {
+      // Aktif ditaruh paling atas, kemudian expired, lalu direvoke.
+      const statusOrder = { active: 1, expired: 2, revoked: 3 };
+      const statusA = statusOrder[getTokenStatus(a)];
+      const statusB = statusOrder[getTokenStatus(b)];
+      
+      if (statusA !== statusB) return statusA - statusB;
+      
+      // Jika status sama, urutkan berdasarkan yang paling baru dibuat
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   async function handleRevoke(token: TokenRow) {
     setRevokingId(token.id);

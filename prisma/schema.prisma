@@ -256,6 +256,7 @@ enum StatusApproval {
 enum JenisRequest {
   GENERATE_TOKEN_HEADADMIN
   REVOKE_TOKEN_HEADADMIN
+  CREATE_HEADADMIN
 }
 
 enum Jurusan {

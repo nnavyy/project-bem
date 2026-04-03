@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
     }
 
     const admins = await prisma.admin.findMany({
-      where: { role: "ADMIN" },
+      where: {
+        role: { in: ["ADMIN", "HEAD_ADMIN"] },
+      },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
@@ -84,12 +86,13 @@ export async function GET(req: NextRequest) {
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/headadmin/admin
-// Buat akun ADMIN baru.
-// Hanya HEAD_ADMIN.
+// Buat akun ADMIN atau HEAD_ADMIN baru.
+// Hanya HEAD_ADMIN dan SUPER_ADMIN.
 //
 // Body JSON:
 //   username : string  (wajib, unik)
 //   nama     : string  (wajib)
+//   role?    : "ADMIN" | "HEAD_ADMIN"  (default: "ADMIN")
 // ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const { ip, ua } = getRequestMeta(req);
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    let body: { username?: string; nama?: string };
+    let body: { username?: string; nama?: string; role?: string };
     try {
       body = await req.json();
     } catch {
@@ -112,10 +115,19 @@ export async function POST(req: NextRequest) {
 
     const username = body.username?.trim();
     const nama = body.nama?.trim();
+    const role = body.role?.trim() || "ADMIN";
 
     if (!username || !nama) {
       return NextResponse.json(
         { message: "username dan nama wajib diisi" },
+        { status: 400 },
+      );
+    }
+
+    // Validasi role
+    if (role !== "ADMIN" && role !== "HEAD_ADMIN") {
+      return NextResponse.json(
+        { message: "Role harus ADMIN atau HEAD_ADMIN" },
         { status: 400 },
       );
     }
@@ -140,11 +152,49 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── HEAD_ADMIN membuat HEAD_ADMIN → butuh approval SUPER_ADMIN ──
+    if (role === "HEAD_ADMIN" && user.role === "HEAD_ADMIN") {
+      // Simpan data akun yang diminta di catatanAdmin sebagai JSON
+      const requestData = JSON.stringify({ username, nama, role });
+      
+      const request = await prisma.requestApproval.create({
+        data: {
+          jenis: "CREATE_HEADADMIN",
+          status: "PENDING",
+          diajukanOleh: user.id,
+          catatanAdmin: requestData,
+        },
+      });
+
+      // Audit log
+      await logAktivitas({
+        adminId: user.id,
+        aksi: "CREATE_ADMIN",
+        entityType: "RequestApproval",
+        entityId: request.id,
+        dataBefore: null,
+        dataAfter: { username, nama, role, status: "PENDING" },
+        ipAddress: ip,
+        userAgent: ua,
+        keterangan: `Request pembuatan akun HEAD_ADMIN baru: ${username} (menunggu approval Super Admin)`,
+      });
+
+      return NextResponse.json(
+        {
+          message: `Request pembuatan akun HEAD_ADMIN "${username}" berhasil diajukan. Akun akan aktif setelah disetujui Super Admin.`,
+          pending: true,
+          requestId: request.id,
+        },
+        { status: 202 },
+      );
+    }
+
+    // ── SUPER_ADMIN atau HEAD_ADMIN membuat ADMIN → langsung buat ──
     const created = await prisma.admin.create({
       data: {
         username,
         nama,
-        role: "ADMIN",
+        role: role as "ADMIN" | "HEAD_ADMIN",
         isActive: true,
       },
       select: {
@@ -174,12 +224,12 @@ export async function POST(req: NextRequest) {
       },
       ipAddress: ip,
       userAgent: ua,
-      keterangan: `HEAD_ADMIN membuat akun admin baru: ${username}`,
+      keterangan: `Membuat akun ${role} baru: ${username}`,
     });
 
     return NextResponse.json(
       {
-        message: `Akun admin "${username}" berhasil dibuat`,
+        message: `Akun ${role === "HEAD_ADMIN" ? "Head Admin" : "Admin"} "${username}" berhasil dibuat`,
         data: created,
       },
       { status: 201 },
