@@ -7,6 +7,7 @@ export type ActivityAction =
   | "LOGOUT"
   | "CREATE_ADMIN"
   | "UPDATE_ADMIN"
+  | "DELETE_ADMIN"
   | "CREATE_BLOG"
   | "UPDATE_BLOG"
   | "DELETE_BLOG"

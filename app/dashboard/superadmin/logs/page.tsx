@@ -123,6 +123,164 @@ function SkeletonRow() {
   );
 }
 
+// ─── Clear Logs Modal ─────────────────────────────────────────────────────────
+
+function ClearLogsModal({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [mode, setMode] = useState<"all" | "before">("before");
+  const [date, setDate] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleClear() {
+    if (mode === "before" && !date) {
+      setError("Pilih tanggal terlebih dahulu.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({ mode });
+      if (mode === "before" && date)
+        params.set("date", new Date(date).toISOString());
+      const res = await fetch(`/api/superadmin/logs?${params.toString()}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message ?? "Terjadi kesalahan.");
+        return;
+      }
+      onSuccess();
+      onClose();
+    } catch {
+      setError("Gagal menghubungi server.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+      <div className="w-full max-w-sm bg-[#020617] border border-white/10 rounded-2xl p-6">
+        <div className="mb-5">
+          <h2 className="text-white font-semibold text-base">
+            Bersihkan Log Aktivitas
+          </h2>
+          <p className="text-white/40 text-xs mt-1">
+            Pilih log yang ingin dihapus
+          </p>
+        </div>
+
+        <div className="space-y-3 mb-4">
+          <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/10">
+            <input
+              type="radio"
+              name="clearMode"
+              value="before"
+              checked={mode === "before"}
+              onChange={() => setMode("before")}
+              className="mt-0.5 accent-blue-400"
+            />
+            <div>
+              <p className="text-white/80 text-sm font-medium">
+                Hapus sebelum tanggal
+              </p>
+              <p className="text-white/40 text-xs mt-0.5">
+                Lebih aman — hanya hapus log lama
+              </p>
+            </div>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/10">
+            <input
+              type="radio"
+              name="clearMode"
+              value="all"
+              checked={mode === "all"}
+              onChange={() => setMode("all")}
+              className="mt-0.5 accent-red-400"
+            />
+            <div>
+              <p className="text-white/80 text-sm font-medium">
+                Hapus semua log
+              </p>
+              <p className="text-red-400/70 text-xs mt-0.5">
+                ⚠ Tidak dapat dikembalikan
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {mode === "before" && (
+          <div className="mb-4">
+            <label className="block text-sm text-white/70 mb-1.5">
+              Hapus log sebelum tanggal
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-[#0b1220] border border-white/15 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+            />
+          </div>
+        )}
+
+        {mode === "all" && (
+          <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 text-red-400 text-xs mb-4">
+            <svg
+              className="w-4 h-4 shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+            Semua log akan dihapus permanen termasuk riwayat login dan aktivitas
+            admin.
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-red-400 text-sm mb-4">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 border border-white/20 text-white text-sm rounded-lg px-4 py-2 hover:bg-white/10 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleClear}
+            disabled={loading}
+            className={[
+              "flex-1 text-sm font-semibold rounded-lg px-4 py-2 transition-colors disabled:opacity-50",
+              mode === "all"
+                ? "bg-red-500 text-white hover:bg-red-400"
+                : "bg-white text-[#0f172a] hover:opacity-90",
+            ].join(" ")}
+          >
+            {loading ? "Menghapus..." : "Hapus Log"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function LogsPage() {
@@ -133,6 +291,7 @@ export default function LogsPage() {
   const [error, setError] = useState("");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [uniqueAdmins, setUniqueAdmins] = useState<AdminInfo[]>([]);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   // ── Filter UI state (unsubmitted inputs) ────────────────────────────────────
   const [adminInput, setAdminInput] = useState("");
@@ -267,11 +426,32 @@ export default function LogsPage() {
             Rekam jejak seluruh aktivitas admin sistem
           </p>
         </div>
-        {hasActiveFilters && (
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">
-            Filter aktif
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {hasActiveFilters && (
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium">
+              Filter aktif
+            </span>
+          )}
+          <button
+            onClick={() => setShowClearModal(true)}
+            className="flex items-center gap-2 border border-red-500/30 text-red-400 text-sm rounded-lg px-4 py-2 hover:bg-red-500/10 transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+              />
+            </svg>
+            Bersihkan Log
+          </button>
+        </div>
       </div>
 
       {/* ── Filter Bar ──────────────────────────────────────────────────────── */}
@@ -633,6 +813,15 @@ export default function LogsPage() {
             </button>
           </div>
         </div>
+      )}
+      {showClearModal && (
+        <ClearLogsModal
+          onClose={() => setShowClearModal(false)}
+          onSuccess={() => {
+            fetchLogs();
+            setShowClearModal(false);
+          }}
+        />
       )}
     </main>
   );

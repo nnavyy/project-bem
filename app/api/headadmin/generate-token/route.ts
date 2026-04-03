@@ -69,10 +69,12 @@ export async function POST(req: NextRequest) {
           select: { id: true },
         });
         if (activeTokens.length > 0) {
-          await prisma.tokenAdmin.updateMany({
-            where: { id: { in: activeTokens.map((t) => t.id) } },
-            data: { isRevoked: true, revokedAt: now },
-          });
+          for (const t of activeTokens) {
+            await prisma.tokenAdmin.update({
+              where: { id: t.id },
+              data: { isRevoked: true, revokedAt: now },
+            });
+          }
         }
       }
 
@@ -85,10 +87,6 @@ export async function POST(req: NextRequest) {
           isPermanent,
           expiredAt: isPermanent ? null : expiredAt,
           isSingleUse,
-        },
-        include: {
-          admin: { select: { id: true, username: true, nama: true, role: true } },
-          headAdmin: { select: { id: true, username: true, nama: true, role: true } },
         },
       });
 
@@ -109,7 +107,14 @@ export async function POST(req: NextRequest) {
         token: plainToken,
         tokenId: created.id,
         tokenRole: created.tokenRole,
-        meta: { admin: created.admin, generatedBy: created.headAdmin, isPermanent: created.isPermanent, expiredAt: created.expiredAt, isSingleUse: created.isSingleUse, createdAt: created.createdAt },
+        meta: { 
+          admin: targetAdmin ? { id: targetAdmin.id, username: targetAdmin.username, nama: targetAdmin.nama, role: targetAdmin.role } : null, 
+          generatedBy: { id: requester.id, username: requester.username, nama: requester.nama, role: requester.role }, 
+          isPermanent: created.isPermanent, 
+          expiredAt: created.expiredAt, 
+          isSingleUse: created.isSingleUse, 
+          createdAt: created.createdAt 
+        },
       }, { status: 201 });
     }
 
@@ -176,10 +181,12 @@ export async function POST(req: NextRequest) {
         select: { id: true },
       });
       if (activeTokens.length > 0) {
-        await prisma.tokenAdmin.updateMany({
-          where: { id: { in: activeTokens.map((t) => t.id) } },
-          data: { isRevoked: true, revokedAt: now },
-        });
+        for (const t of activeTokens) {
+          await prisma.tokenAdmin.update({
+            where: { id: t.id },
+            data: { isRevoked: true, revokedAt: now },
+          });
+        }
       }
     }
 
@@ -192,10 +199,6 @@ export async function POST(req: NextRequest) {
         isPermanent,
         expiredAt: isPermanent ? null : expiredAt,
         isSingleUse,
-      },
-      include: {
-        admin: { select: { id: true, username: true, nama: true, role: true } },
-        headAdmin: { select: { id: true, username: true, nama: true, role: true } },
       },
     });
 
@@ -216,7 +219,14 @@ export async function POST(req: NextRequest) {
       token: plainToken,
       tokenId: created.id,
       tokenRole: created.tokenRole,
-      meta: { admin: created.admin, generatedBy: created.headAdmin, isPermanent: created.isPermanent, expiredAt: created.expiredAt, isSingleUse: created.isSingleUse, createdAt: created.createdAt },
+      meta: { 
+        admin: targetAdmin ? { id: targetAdmin.id, username: targetAdmin.username, nama: targetAdmin.nama, role: targetAdmin.role } : null, 
+        generatedBy: { id: requester.id, username: requester.username, nama: requester.nama, role: requester.role }, 
+        isPermanent: created.isPermanent, 
+        expiredAt: created.expiredAt, 
+        isSingleUse: created.isSingleUse, 
+        createdAt: created.createdAt 
+      },
     }, { status: 201 });
 
   } catch (err) {

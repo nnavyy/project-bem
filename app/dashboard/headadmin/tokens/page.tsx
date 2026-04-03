@@ -436,9 +436,11 @@ function TokenResultModal({
 function GenerateTokenPanel({
   admins,
   onResult,
+  onPendingApproval,
 }: {
   admins: AdminOption[];
   onResult: (result: GenerateTokenResult) => void;
+  onPendingApproval: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [tokenRole, setTokenRole] = useState<"ADMIN" | "HEAD_ADMIN">("ADMIN");
@@ -472,6 +474,19 @@ function GenerateTokenPanel({
         body: JSON.stringify(body),
       });
       const data = await res.json();
+
+      // Handle pending approval (202) — HEAD_ADMIN generating HEAD_ADMIN token
+      if (res.status === 202) {
+        setTokenRole("ADMIN");
+        setSelectedAdminId("");
+        setIsPermanent(false);
+        setIsSingleUse(false);
+        setExpiredAt("");
+        setOpen(false);
+        onPendingApproval();
+        return;
+      }
+
       if (!res.ok) {
         setError(data.error ?? data.message ?? "Terjadi kesalahan.");
         return;
@@ -524,13 +539,19 @@ function GenerateTokenPanel({
               {/* Token Role selector */}
               <div className="sm:col-span-2">
                 <label className="block text-sm text-white/70 mb-1.5">
-                  Role Token {tokenRole === "HEAD_ADMIN" && <span className="ml-2 text-xs text-yellow-400 font-normal bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">Butuh Approval Super Admin</span>} <span className="text-red-400">*</span>
+                  Role Token{" "}
+                  {tokenRole === "HEAD_ADMIN" && (
+                    <span className="ml-2 text-xs text-yellow-400 font-normal bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">
+                      Butuh Approval Super Admin
+                    </span>
+                  )}{" "}
+                  <span className="text-red-400">*</span>
                 </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <div className="relative flex items-center justify-center w-4 h-4">
-                      <input 
-                        type="radio" 
+                      <input
+                        type="radio"
                         name="tokenRole"
                         className="peer appearance-none w-4 h-4 rounded-full border border-white/20 checked:border-blue-400 cursor-pointer transition-colors"
                         checked={tokenRole === "ADMIN"}
@@ -541,12 +562,14 @@ function GenerateTokenPanel({
                       />
                       <div className="absolute w-2 h-2 rounded-full bg-blue-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
                     </div>
-                    <span className="text-sm text-white/80 group-hover:text-white transition-colors">ADMIN</span>
+                    <span className="text-sm text-white/80 group-hover:text-white transition-colors">
+                      ADMIN
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <div className="relative flex items-center justify-center w-4 h-4">
-                      <input 
-                        type="radio" 
+                      <input
+                        type="radio"
                         name="tokenRole"
                         className="peer appearance-none w-4 h-4 rounded-full border border-white/20 checked:border-purple-400 cursor-pointer transition-colors"
                         checked={tokenRole === "HEAD_ADMIN"}
@@ -557,7 +580,9 @@ function GenerateTokenPanel({
                       />
                       <div className="absolute w-2 h-2 rounded-full bg-purple-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
                     </div>
-                    <span className="text-sm text-white/80 group-hover:text-white transition-colors">HEAD_ADMIN</span>
+                    <span className="text-sm text-white/80 group-hover:text-white transition-colors">
+                      HEAD_ADMIN
+                    </span>
                   </label>
                 </div>
               </div>
@@ -705,6 +730,9 @@ export default function TokenManagementPage() {
     null,
   );
 
+  // Pending approval notice (shown when a 202 is returned for HEAD_ADMIN token generation)
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+
   const fetchData = useCallback(() => {
     setLoading(true);
     setError(false);
@@ -738,9 +766,9 @@ export default function TokenManagementPage() {
       const statusOrder = { active: 1, expired: 2, revoked: 3 };
       const statusA = statusOrder[getTokenStatus(a)];
       const statusB = statusOrder[getTokenStatus(b)];
-      
+
       if (statusA !== statusB) return statusA - statusB;
-      
+
       // Jika status sama, urutkan berdasarkan yang paling baru dibuat
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
@@ -808,7 +836,32 @@ export default function TokenManagementPage() {
       </div>
 
       {/* Generate Token Panel */}
-      <GenerateTokenPanel admins={admins} onResult={handleTokenResult} />
+      <GenerateTokenPanel
+        admins={admins}
+        onResult={handleTokenResult}
+        onPendingApproval={() => {
+          setPendingNotice(
+            "Request generate token HEAD_ADMIN berhasil diajukan. Menunggu persetujuan Super Admin.",
+          );
+          fetchData();
+        }}
+      />
+
+      {/* Pending approval notice */}
+      {pendingNotice && (
+        <div className="flex items-center justify-between gap-3 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 mb-4 text-green-400 text-sm">
+          <div className="flex items-center gap-2">
+            <IconCheck />
+            {pendingNotice}
+          </div>
+          <button
+            onClick={() => setPendingNotice(null)}
+            className="shrink-0 p-1 rounded hover:bg-green-500/10 transition-colors"
+          >
+            <IconX />
+          </button>
+        </div>
+      )}
 
       {/* Revoke error banner */}
       {revokeError && (

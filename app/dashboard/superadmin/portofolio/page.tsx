@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -220,16 +221,22 @@ export default function PortofolioPage() {
           namaAnggota: "",
           jabatan: "",
           foto: "",
-          urutan: prev.galeri.length,
+          urutan: prev.galeri.length + 1,
         },
       ],
     }));
   }
 
-  function updateAnggota(tempId: string, field: string, value: string | number | boolean) {
+  function updateAnggota(
+    tempId: string,
+    field: string,
+    value: string | number | boolean,
+  ) {
     setForm((prev) => ({
       ...prev,
-      galeri: prev.galeri.map((g) => (g._tempId === tempId ? { ...g, [field]: value } : g)),
+      galeri: prev.galeri.map((g) =>
+        g._tempId === tempId ? { ...g, [field]: value } : g,
+      ),
     }));
   }
 
@@ -359,8 +366,23 @@ export default function PortofolioPage() {
   return (
     <main className="p-6 lg:p-8">
       {/* ── Page Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-white/50 hover:text-white text-sm mb-2 transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Kembali ke Dashboard
+          </Link>
           <h1 className="text-xl font-semibold text-white">Portofolio</h1>
           <p className="text-white/50 text-sm mt-0.5">
             Kelola portofolio kegiatan divisi BEM
@@ -631,7 +653,8 @@ export default function PortofolioPage() {
                       alt="Preview"
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                        (e.currentTarget as HTMLImageElement).style.display =
+                          "none";
                       }}
                     />
                     <button
@@ -640,8 +663,18 @@ export default function PortofolioPage() {
                       className="absolute top-2 right-2 bg-black/60 text-white/80 hover:text-white rounded-lg p-1 transition-colors"
                       aria-label="Hapus foto"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -652,7 +685,10 @@ export default function PortofolioPage() {
                         ? "border-blue-500/40 bg-blue-500/5"
                         : "border-white/15 bg-[#0b1220] hover:border-white/30"
                     }`}
-                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                     onDrop={async (e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -663,12 +699,20 @@ export default function PortofolioPage() {
                       try {
                         const fd = new FormData();
                         fd.append("file", file);
-                        const res = await fetch("/api/upload?subfolder=portofolio", { method: "POST", body: fd });
+                        const res = await fetch(
+                          "/api/upload?subfolder=portofolio",
+                          { method: "POST", body: fd },
+                        );
                         const data = await res.json();
-                        if (!res.ok) throw new Error(data?.message ?? "Gagal upload");
+                        if (!res.ok)
+                          throw new Error(data?.message ?? "Gagal upload");
                         setField("fotoUtama", data.url);
                       } catch (err: unknown) {
-                        setFormError(err instanceof Error ? err.message : "Gagal upload gambar");
+                        setFormError(
+                          err instanceof Error
+                            ? err.message
+                            : "Gagal upload gambar",
+                        );
                       } finally {
                         setUploading(false);
                       }
@@ -686,12 +730,20 @@ export default function PortofolioPage() {
                         try {
                           const fd = new FormData();
                           fd.append("file", file);
-                          const res = await fetch("/api/upload?subfolder=portofolio", { method: "POST", body: fd });
+                          const res = await fetch(
+                            "/api/upload?subfolder=portofolio",
+                            { method: "POST", body: fd },
+                          );
                           const data = await res.json();
-                          if (!res.ok) throw new Error(data?.message ?? "Gagal upload");
+                          if (!res.ok)
+                            throw new Error(data?.message ?? "Gagal upload");
                           setField("fotoUtama", data.url);
                         } catch (err: unknown) {
-                          setFormError(err instanceof Error ? err.message : "Gagal upload gambar");
+                          setFormError(
+                            err instanceof Error
+                              ? err.message
+                              : "Gagal upload gambar",
+                          );
                         } finally {
                           setUploading(false);
                           e.target.value = "";
@@ -701,15 +753,31 @@ export default function PortofolioPage() {
                     {uploading ? (
                       <>
                         <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-blue-400 text-xs">Mengupload...</span>
+                        <span className="text-blue-400 text-xs">
+                          Mengupload...
+                        </span>
                       </>
                     ) : (
                       <>
-                        <svg className="w-8 h-8 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        <svg
+                          className="w-8 h-8 text-white/20"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                          />
                         </svg>
-                        <span className="text-white/40 text-xs">Klik atau seret gambar ke sini</span>
-                        <span className="text-white/20 text-[10px]">JPG, PNG, WebP, GIF — Maks 5MB</span>
+                        <span className="text-white/40 text-xs">
+                          Klik atau seret gambar ke sini
+                        </span>
+                        <span className="text-white/20 text-[10px]">
+                          JPG, PNG, WebP, GIF — Maks 5MB
+                        </span>
                       </>
                     )}
                   </label>
@@ -734,7 +802,10 @@ export default function PortofolioPage() {
               <div className="pt-4 border-t border-white/10 mt-4">
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm text-white/70 font-medium">
-                    Galeri Anggota <span className="text-white/35 font-normal">(opsional)</span>
+                    Galeri Anggota{" "}
+                    <span className="text-white/35 font-normal">
+                      (opsional)
+                    </span>
                   </label>
                   <button
                     type="button"
@@ -744,23 +815,34 @@ export default function PortofolioPage() {
                     + Tambah Anggota
                   </button>
                 </div>
-                
+
                 {form.galeri.length === 0 ? (
                   <div className="text-center py-6 border border-white/10 border-dashed rounded-lg bg-[#0b1220]">
-                    <p className="text-white/40 text-xs text-center">Belum ada anggota yang ditambahkan.</p>
+                    <p className="text-white/40 text-xs text-center">
+                      Belum ada anggota yang ditambahkan.
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {form.galeri.map((g, index) => (
-                      <div key={g._tempId} className="flex flex-col sm:flex-row gap-3 p-3 border border-white/10 rounded-lg bg-[#0b1220] relative max-h-48">
+                      <div
+                        key={g._tempId}
+                        className="flex flex-col sm:flex-row gap-3 p-3 border border-white/10 rounded-lg bg-[#0b1220] relative max-h-48"
+                      >
                         {/* Foto Uploader */}
                         <div className="shrink-0">
                           {g.foto ? (
                             <div className="relative w-16 h-16 rounded overflow-hidden group">
-                              <img src={g.foto} alt="Foto" className="w-full h-full object-cover" />
+                              <img
+                                src={g.foto}
+                                alt="Foto"
+                                className="w-full h-full object-cover"
+                              />
                               <button
                                 type="button"
-                                onClick={() => updateAnggota(g._tempId, "foto", "")}
+                                onClick={() =>
+                                  updateAnggota(g._tempId, "foto", "")
+                                }
                                 className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
                               >
                                 <IconX />
@@ -771,7 +853,9 @@ export default function PortofolioPage() {
                               {g.uploading ? (
                                 <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                               ) : (
-                                <span className="text-white/40 text-[10px] text-center px-1">Upload Foto</span>
+                                <span className="text-white/40 text-[10px] text-center px-1">
+                                  Upload Foto
+                                </span>
                               )}
                               <input
                                 type="file"
@@ -779,19 +863,31 @@ export default function PortofolioPage() {
                                 className="hidden"
                                 onChange={async (e) => {
                                   const file = e.target.files?.[0];
-                                  if(!file) return;
+                                  if (!file) return;
                                   updateAnggota(g._tempId, "uploading", true);
                                   try {
                                     const fd = new FormData();
                                     fd.append("file", file);
-                                    const res = await fetch("/api/upload?subfolder=portofolio", { method: "POST", body: fd });
+                                    const res = await fetch(
+                                      "/api/upload?subfolder=portofolio",
+                                      { method: "POST", body: fd },
+                                    );
                                     const data = await res.json();
-                                    if(res.ok) updateAnggota(g._tempId, "foto", data.url);
+                                    if (res.ok)
+                                      updateAnggota(
+                                        g._tempId,
+                                        "foto",
+                                        data.url,
+                                      );
                                     else throw new Error("Gagal upload");
                                   } catch (err) {
                                     alert("Gagal mengupload foto anggota");
                                   } finally {
-                                    updateAnggota(g._tempId, "uploading", false);
+                                    updateAnggota(
+                                      g._tempId,
+                                      "uploading",
+                                      false,
+                                    );
                                     e.target.value = "";
                                   }
                                 }}
@@ -805,32 +901,54 @@ export default function PortofolioPage() {
                             type="text"
                             placeholder="Nama Lengkap *"
                             value={g.namaAnggota}
-                            onChange={(e) => updateAnggota(g._tempId, "namaAnggota", e.target.value)}
+                            onChange={(e) =>
+                              updateAnggota(
+                                g._tempId,
+                                "namaAnggota",
+                                e.target.value,
+                              )
+                            }
                             className="w-full bg-black/20 border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-white/30 outline-none focus:border-white/30"
                           />
                           <input
                             type="text"
                             placeholder="Jabatan"
                             value={g.jabatan}
-                            onChange={(e) => updateAnggota(g._tempId, "jabatan", e.target.value)}
+                            onChange={(e) =>
+                              updateAnggota(
+                                g._tempId,
+                                "jabatan",
+                                e.target.value,
+                              )
+                            }
                             className="w-full bg-black/20 border border-white/10 rounded px-2 py-1.5 text-xs text-white placeholder:text-white/30 outline-none focus:border-white/30"
                           />
                         </div>
                         <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2">
-                           <input
-                             type="number"
-                             placeholder="Urutan"
-                             value={g.urutan === 0 && g.namaAnggota === "" ? index : g.urutan}
-                             onChange={(e) => updateAnggota(g._tempId, "urutan", parseInt(e.target.value) || 0)}
-                             className="w-16 bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-center text-white placeholder:text-white/30 outline-none focus:border-white/30"
-                           />
-                           <button
-                             type="button"
-                             onClick={() => removeAnggota(g._tempId)}
-                             className="text-red-400 hover:text-red-300 text-[10px] px-2 py-1 rounded bg-red-500/10 transition-colors uppercase font-medium"
-                           >
-                             Hapus
-                           </button>
+                          <input
+                            type="number"
+                            placeholder="Urutan"
+                            value={
+                              g.urutan === 0 && g.namaAnggota === ""
+                                ? index
+                                : g.urutan
+                            }
+                            onChange={(e) =>
+                              updateAnggota(
+                                g._tempId,
+                                "urutan",
+                                parseInt(e.target.value) || 0,
+                              )
+                            }
+                            className="w-16 bg-black/20 border border-white/10 rounded px-2 py-1 text-xs text-center text-white placeholder:text-white/30 outline-none focus:border-white/30"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAnggota(g._tempId)}
+                            className="text-red-400 hover:text-red-300 text-[10px] px-2 py-1 rounded bg-red-500/10 transition-colors uppercase font-medium"
+                          >
+                            Hapus
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -898,9 +1016,23 @@ export default function PortofolioPage() {
                       onClick={() => setShowPreview(true)}
                       className={`text-xs px-3 py-1 rounded-full transition-colors flex items-center gap-1.5 ${showPreview ? "bg-blue-500 text-white font-semibold" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
                       </svg>
                       Preview Publik
                     </button>
@@ -920,7 +1052,11 @@ export default function PortofolioPage() {
                   <div className="bg-white text-slate-800 rounded-xl overflow-hidden shadow-xl border border-white/10">
                     <div className="relative h-64 bg-slate-200">
                       {target.fotoUtama ? (
-                        <img src={target.fotoUtama} alt="" className="w-full h-full object-cover" />
+                        <img
+                          src={target.fotoUtama}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400">
                           Tanpa Foto Utama
@@ -928,35 +1064,68 @@ export default function PortofolioPage() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                       <div className="absolute bottom-0 left-0 p-6 text-white w-full">
-                        <span className="bg-blue-600 px-3 py-1 text-xs font-semibold rounded-full mb-3 inline-block">Portofolio BEM</span>
-                        <h1 className="text-2xl font-bold break-words">{target.namaDivisi}</h1>
+                        <span className="bg-blue-600 px-3 py-1 text-xs font-semibold rounded-full mb-3 inline-block">
+                          Portofolio BEM
+                        </span>
+                        <h1 className="text-2xl font-bold break-words">
+                          {target.namaDivisi}
+                        </h1>
                         {target.tanggalKegiatan && (
-                          <p className="text-white/80 text-sm mt-1">{fmtDateOnly(target.tanggalKegiatan)}</p>
+                          <p className="text-white/80 text-sm mt-1">
+                            {fmtDateOnly(target.tanggalKegiatan)}
+                          </p>
                         )}
                       </div>
                     </div>
                     <div className="p-6 md:p-8 overflow-hidden">
-                      <h3 className="text-lg font-semibold text-slate-900 mb-3 break-words">Deskripsi Kegiatan</h3>
-                      <p className="text-slate-600 leading-relaxed whitespace-pre-wrap mb-8 text-sm break-words" style={{ overflowWrap: 'anywhere' }}>{target.deskripsi}</p>
-                      
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3 break-words">
+                        Deskripsi Kegiatan
+                      </h3>
+                      <p
+                        className="text-slate-600 leading-relaxed whitespace-pre-wrap mb-8 text-sm break-words"
+                        style={{ overflowWrap: "anywhere" }}
+                      >
+                        {target.deskripsi}
+                      </p>
+
                       {target.galeri.length > 0 && (
                         <>
-                          <h3 className="text-lg font-semibold text-slate-900 mb-4 border-t border-slate-100 pt-6">Anggota Terlibat</h3>
+                          <h3 className="text-lg font-semibold text-slate-900 mb-4 border-t border-slate-100 pt-6">
+                            Anggota Terlibat
+                          </h3>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                            {target.galeri.slice().sort((a,b)=>(a.urutan??999)-(b.urutan??999)).map(g => (
-                              <div key={g.id} className="group relative overflow-hidden rounded-xl aspect-[3/4] bg-slate-100 shadow-sm border border-slate-200/50">
-                                {g.foto ? (
-                                  <img src={g.foto} alt={g.namaAnggota} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 text-3xl font-bold uppercase">{g.namaAnggota.substring(0,2)}</div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 opacity-80" />
-                                <div className="absolute bottom-0 left-0 w-full p-4 text-white translate-y-2 group-hover:translate-y-0 transition-transform">
-                                  <p className="font-semibold text-sm leading-tight text-white">{g.namaAnggota}</p>
-                                  <p className="text-xs text-white/80 line-clamp-1 mt-0.5">{g.jabatan}</p>
+                            {target.galeri
+                              .slice()
+                              .sort(
+                                (a, b) => (a.urutan ?? 999) - (b.urutan ?? 999),
+                              )
+                              .map((g) => (
+                                <div
+                                  key={g.id}
+                                  className="group relative overflow-hidden rounded-xl aspect-[3/4] bg-slate-100 shadow-sm border border-slate-200/50"
+                                >
+                                  {g.foto ? (
+                                    <img
+                                      src={g.foto}
+                                      alt={g.namaAnggota}
+                                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 text-3xl font-bold uppercase">
+                                      {g.namaAnggota.substring(0, 2)}
+                                    </div>
+                                  )}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 opacity-80" />
+                                  <div className="absolute bottom-0 left-0 w-full p-4 text-white translate-y-2 group-hover:translate-y-0 transition-transform">
+                                    <p className="font-semibold text-sm leading-tight text-white">
+                                      {g.namaAnggota}
+                                    </p>
+                                    <p className="text-xs text-white/80 line-clamp-1 mt-0.5">
+                                      {g.jabatan}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         </>
                       )}
@@ -1010,7 +1179,9 @@ export default function PortofolioPage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-white/40 text-xs mb-0.5">Dibuat Pada</p>
+                          <p className="text-white/40 text-xs mb-0.5">
+                            Dibuat Pada
+                          </p>
                           <p className="text-white/55 text-xs">
                             {fmtDate(target.createdAt)}
                           </p>
@@ -1065,7 +1236,10 @@ export default function PortofolioPage() {
                             <tbody>
                               {target.galeri
                                 .slice()
-                                .sort((a, b) => (a.urutan ?? 999) - (b.urutan ?? 999))
+                                .sort(
+                                  (a, b) =>
+                                    (a.urutan ?? 999) - (b.urutan ?? 999),
+                                )
                                 .map((g) => (
                                   <tr
                                     key={g.id}
@@ -1091,7 +1265,9 @@ export default function PortofolioPage() {
                                         />
                                       ) : null}
                                       {!g.foto && (
-                                        <AvatarPlaceholder name={g.namaAnggota} />
+                                        <AvatarPlaceholder
+                                          name={g.namaAnggota}
+                                        />
                                       )}
                                     </td>
 
@@ -1109,7 +1285,8 @@ export default function PortofolioPage() {
 
                                     {/* Urutan */}
                                     <td className="py-3 px-4">
-                                      {g.urutan !== null && g.urutan !== undefined ? (
+                                      {g.urutan !== null &&
+                                      g.urutan !== undefined ? (
                                         <span className="text-white/50 text-xs font-mono bg-white/5 px-2 py-0.5 rounded">
                                           {g.urutan}
                                         </span>

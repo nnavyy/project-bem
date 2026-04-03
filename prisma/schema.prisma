@@ -1,10 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -230,6 +231,7 @@ enum AksiAdmin {
   LOGOUT
   CREATE_ADMIN
   UPDATE_ADMIN
+  DELETE_ADMIN
   CREATE_BLOG
   UPDATE_BLOG
   DELETE_BLOG
@@ -257,6 +259,7 @@ enum JenisRequest {
   GENERATE_TOKEN_HEADADMIN
   REVOKE_TOKEN_HEADADMIN
   CREATE_HEADADMIN
+  REVOKE_TOKEN_SUPERADMIN
 }
 
 enum Jurusan {

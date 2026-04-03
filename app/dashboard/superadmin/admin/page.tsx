@@ -32,7 +32,12 @@ type GenerateTokenResult = {
   tokenRole: string;
   meta: {
     admin: { id: string; username: string; nama: string; role: string } | null;
-    generatedBy: { id: string; username: string; nama: string; role: string } | null;
+    generatedBy: {
+      id: string;
+      username: string;
+      nama: string;
+      role: string;
+    } | null;
     isPermanent: boolean;
     expiredAt: string | null;
     isSingleUse: boolean;
@@ -62,38 +67,98 @@ function todayIsoMin() {
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 const IconPlus = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+  <svg
+    className="w-4 h-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 4.5v15m7.5-7.5h-15"
+    />
   </svg>
 );
 
 const IconKey = () => (
-  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+  <svg
+    className="w-3.5 h-3.5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.8}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"
+    />
   </svg>
 );
 
 const IconCopy = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+  <svg
+    className="w-4 h-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.8}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"
+    />
   </svg>
 );
 
 const IconCheck = () => (
-  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+  <svg
+    className="w-4 h-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M4.5 12.75l6 6 9-13.5"
+    />
   </svg>
 );
 
 const IconX = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.8}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6 18L18 6M6 6l12 12"
+    />
   </svg>
 );
 
 const IconWarn = () => (
-  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+  <svg
+    className="w-4 h-4 shrink-0"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={1.8}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+    />
   </svg>
 );
 
@@ -104,7 +169,10 @@ function SkeletonRow() {
     <tr className="border-b border-white/5">
       {[40, 28, 36, 20, 24, 32, 56].map((w, i) => (
         <td key={i} className="py-3 px-4">
-          <div className={`animate-pulse bg-white/5 rounded h-3.5 w-${w}`} style={{ width: `${w * 4}px` }} />
+          <div
+            className={`animate-pulse bg-white/5 rounded h-3.5 w-${w}`}
+            style={{ width: `${w * 4}px` }}
+          />
         </td>
       ))}
     </tr>
@@ -138,7 +206,11 @@ function CreateAdminModal({
       const res = await fetch("/api/headadmin/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), nama: nama.trim(), role }),
+        body: JSON.stringify({
+          username: username.trim(),
+          nama: nama.trim(),
+          role,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -160,8 +232,12 @@ function CreateAdminModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-white font-semibold text-base">Tambah Admin Baru</h2>
-            <p className="text-white/40 text-xs mt-0.5">Buat akun baru dengan role yang dipilih</p>
+            <h2 className="text-white font-semibold text-base">
+              Tambah Admin Baru
+            </h2>
+            <p className="text-white/40 text-xs mt-0.5">
+              Buat akun baru dengan role yang dipilih
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -173,7 +249,9 @@ function CreateAdminModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-white/70 mb-1.5">Username</label>
+            <label className="block text-sm text-white/70 mb-1.5">
+              Username
+            </label>
             <input
               type="text"
               value={username}
@@ -188,7 +266,9 @@ function CreateAdminModal({
           </div>
 
           <div>
-            <label className="block text-sm text-white/70 mb-1.5">Nama Lengkap</label>
+            <label className="block text-sm text-white/70 mb-1.5">
+              Nama Lengkap
+            </label>
             <input
               type="text"
               value={nama}
@@ -212,7 +292,9 @@ function CreateAdminModal({
                   />
                   <div className="absolute w-2 h-2 rounded-full bg-blue-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
                 </div>
-                <span className="text-sm text-white/80 group-hover:text-white transition-colors">ADMIN</span>
+                <span className="text-sm text-white/80 group-hover:text-white transition-colors">
+                  ADMIN
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer group">
                 <div className="relative flex items-center justify-center w-4 h-4">
@@ -225,7 +307,9 @@ function CreateAdminModal({
                   />
                   <div className="absolute w-2 h-2 rounded-full bg-purple-400 opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
                 </div>
-                <span className="text-sm text-white/80 group-hover:text-white transition-colors">HEAD_ADMIN</span>
+                <span className="text-sm text-white/80 group-hover:text-white transition-colors">
+                  HEAD_ADMIN
+                </span>
               </label>
             </div>
           </div>
@@ -250,7 +334,9 @@ function CreateAdminModal({
               disabled={loading}
               className="flex-1 bg-white text-[#0f172a] text-sm font-semibold rounded-lg px-4 py-2 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? "Membuat..." : `Buat ${role === "HEAD_ADMIN" ? "Head Admin" : "Admin"}`}
+              {loading
+                ? "Membuat..."
+                : `Buat ${role === "HEAD_ADMIN" ? "Head Admin" : "Admin"}`}
             </button>
           </div>
         </form>
@@ -316,10 +402,14 @@ function GenerateTokenModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-white font-semibold text-base">Generate Token</h2>
+            <h2 className="text-white font-semibold text-base">
+              Generate Token
+            </h2>
             <p className="text-white/40 text-xs mt-0.5">
               Token untuk{" "}
-              <span className="text-white/70 font-medium">@{admin.username}</span>
+              <span className="text-white/70 font-medium">
+                @{admin.username}
+              </span>
             </p>
           </div>
           <button
@@ -355,14 +445,26 @@ function GenerateTokenModal({
                 ].join(" ")}
               >
                 {isPermanent && (
-                  <svg className="w-2.5 h-2.5 text-[#0f172a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  <svg
+                    className="w-2.5 h-2.5 text-[#0f172a]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.5 12.75l6 6 9-13.5"
+                    />
                   </svg>
                 )}
               </div>
             </div>
             <div>
-              <p className="text-white/80 text-sm font-medium">Token Permanen</p>
+              <p className="text-white/80 text-sm font-medium">
+                Token Permanen
+              </p>
               <p className="text-white/40 text-xs mt-0.5">
                 Token tidak memiliki tanggal kadaluarsa
               </p>
@@ -392,8 +494,18 @@ function GenerateTokenModal({
                 ].join(" ")}
               >
                 {isSingleUse && (
-                  <svg className="w-2.5 h-2.5 text-[#0f172a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  <svg
+                    className="w-2.5 h-2.5 text-[#0f172a]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.5 12.75l6 6 9-13.5"
+                    />
                   </svg>
                 )}
               </div>
@@ -411,7 +523,9 @@ function GenerateTokenModal({
             <label className="block text-sm text-white/70 mb-1.5">
               Kadaluarsa
               {isPermanent && (
-                <span className="ml-2 text-white/30 text-xs font-normal">(dinonaktifkan — token permanen)</span>
+                <span className="ml-2 text-white/30 text-xs font-normal">
+                  (dinonaktifkan — token permanen)
+                </span>
               )}
             </label>
             <input
@@ -433,7 +547,8 @@ function GenerateTokenModal({
           <div className="flex items-start gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2.5 text-yellow-400 text-xs">
             <IconWarn />
             <span>
-              Token aktif admin ini akan otomatis direvoke dan digantikan oleh token baru.
+              Token aktif admin ini akan otomatis direvoke dan digantikan oleh
+              token baru.
             </span>
           </div>
 
@@ -490,10 +605,11 @@ function TokenResultModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-white font-semibold text-base">Token Berhasil Dibuat</h2>
+            <h2 className="text-white font-semibold text-base">
+              Token Berhasil Dibuat
+            </h2>
             <p className="text-white/40 text-xs mt-0.5">
-              Role:{" "}
-              <span className="text-white/70">{result.tokenRole}</span>
+              Role: <span className="text-white/70">{result.tokenRole}</span>
             </p>
           </div>
           <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
@@ -505,14 +621,18 @@ function TokenResultModal({
         <div className="flex items-start gap-2.5 bg-yellow-500/10 border border-yellow-500/25 rounded-xl px-4 py-3 mb-4">
           <IconWarn />
           <p className="text-yellow-400 text-xs leading-relaxed">
-            <strong className="font-semibold">Simpan token ini sekarang!</strong> Token tidak akan
-            ditampilkan lagi setelah modal ini ditutup.
+            <strong className="font-semibold">
+              Simpan token ini sekarang!
+            </strong>{" "}
+            Token tidak akan ditampilkan lagi setelah modal ini ditutup.
           </p>
         </div>
 
         {/* Token Display */}
         <div className="bg-[#0b1220] border border-white/10 rounded-xl p-4 mb-4">
-          <p className="text-white/40 text-xs mb-2 uppercase tracking-wider font-medium">Token</p>
+          <p className="text-white/40 text-xs mb-2 uppercase tracking-wider font-medium">
+            Token
+          </p>
           <div className="flex items-start gap-3">
             <code className="flex-1 text-green-400 text-xs font-mono break-all leading-relaxed select-all">
               {result.token}
@@ -558,8 +678,8 @@ function TokenResultModal({
               {result.meta.isPermanent
                 ? "Permanen"
                 : result.meta.expiredAt
-                ? fmtDate(result.meta.expiredAt)
-                : "1 hari"}
+                  ? fmtDate(result.meta.expiredAt)
+                  : "1 hari"}
             </p>
           </div>
         </div>
@@ -575,6 +695,88 @@ function TokenResultModal({
   );
 }
 
+// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+
+function DeleteConfirmModal({
+  admin,
+  onClose,
+  onSuccess,
+}: {
+  admin: AdminRow;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleDelete() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/superadmin/admin/${admin.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message ?? "Gagal menghapus admin.");
+        return;
+      }
+      onSuccess();
+      onClose();
+    } catch {
+      setError("Gagal menghubungi server.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+      <div className="w-full max-w-sm bg-[#020617] border border-red-500/20 rounded-2xl p-6">
+        <div className="flex items-start gap-4 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-red-400 shrink-0">
+            <IconWarn />
+          </div>
+          <div>
+            <h2 className="text-white font-semibold text-base">Hapus Admin</h2>
+            <p className="text-white/50 text-xs mt-1 leading-relaxed">
+              Tindakan ini akan menghapus akun{" "}
+              <span className="text-white/80 font-medium">
+                @{admin.username}
+              </span>{" "}
+              secara permanen. Semua token aktif akan direvoke. Tindakan ini
+              tidak dapat dibatalkan.
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2.5 text-red-400 text-sm mb-4">
+            <IconWarn />
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 border border-white/20 text-white text-sm rounded-lg px-4 py-2 hover:bg-white/10 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading}
+            className="flex-1 bg-red-500 text-white text-sm font-semibold rounded-lg px-4 py-2 hover:bg-red-400 transition-colors disabled:opacity-50"
+          >
+            {loading ? "Menghapus..." : "Hapus Permanen"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminManagementPage() {
@@ -585,7 +787,10 @@ export default function AdminManagementPage() {
   // Modal states
   const [showCreate, setShowCreate] = useState(false);
   const [generateTarget, setGenerateTarget] = useState<AdminRow | null>(null);
-  const [tokenResult, setTokenResult] = useState<GenerateTokenResult | null>(null);
+  const [tokenResult, setTokenResult] = useState<GenerateTokenResult | null>(
+    null,
+  );
+  const [deleteTarget, setDeleteTarget] = useState<AdminRow | null>(null);
 
   // Per-row toggle loading
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -600,7 +805,10 @@ export default function AdminManagementPage() {
           // Urutkan admin: yang aktif ditaruh di atas, nonaktif di bawah
           const sorted = data.sort((a, b) => {
             if (a.isActive === b.isActive) {
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              return (
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+              );
             }
             return a.isActive ? -1 : 1;
           });
@@ -719,13 +927,19 @@ export default function AdminManagementPage() {
                 Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="text-white/40 text-sm text-center py-12">
+                  <td
+                    colSpan={8}
+                    className="text-white/40 text-sm text-center py-12"
+                  >
                     Gagal memuat data admin. Silakan muat ulang halaman.
                   </td>
                 </tr>
               ) : admins.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-white/40 text-sm text-center py-12">
+                  <td
+                    colSpan={8}
+                    className="text-white/40 text-sm text-center py-12"
+                  >
                     Belum ada admin terdaftar.
                   </td>
                 </tr>
@@ -736,11 +950,15 @@ export default function AdminManagementPage() {
                     className="border-b border-white/5 hover:bg-white/5 transition-colors"
                   >
                     {/* No */}
-                    <td className="py-3 px-4 text-white/40 text-xs">{idx + 1}</td>
+                    <td className="py-3 px-4 text-white/40 text-xs">
+                      {idx + 1}
+                    </td>
 
                     {/* Username */}
                     <td className="py-3 px-4">
-                      <span className="text-white/80 font-medium">@{admin.username}</span>
+                      <span className="text-white/80 font-medium">
+                        @{admin.username}
+                      </span>
                     </td>
 
                     {/* Nama */}
@@ -748,12 +966,14 @@ export default function AdminManagementPage() {
 
                     {/* Role */}
                     <td className="py-3 px-4">
-                      <span className={[
-                        "text-xs px-2 py-0.5 rounded-full font-medium",
-                        admin.role === "HEAD_ADMIN"
-                          ? "bg-purple-500/20 text-purple-400"
-                          : "bg-blue-500/20 text-blue-400",
-                      ].join(" ")}>
+                      <span
+                        className={[
+                          "text-xs px-2 py-0.5 rounded-full font-medium",
+                          admin.role === "HEAD_ADMIN"
+                            ? "bg-purple-500/20 text-purple-400"
+                            : "bg-blue-500/20 text-blue-400",
+                        ].join(" ")}
+                      >
                         {admin.role === "HEAD_ADMIN" ? "Head Admin" : "Admin"}
                       </span>
                     </td>
@@ -782,8 +1002,8 @@ export default function AdminManagementPage() {
                             {admin.activeToken.isPermanent
                               ? "Permanen"
                               : admin.activeToken.expiredAt
-                              ? `Exp: ${fmtDate(admin.activeToken.expiredAt)}`
-                              : "—"}
+                                ? `Exp: ${fmtDate(admin.activeToken.expiredAt)}`
+                                : "—"}
                           </p>
                         </div>
                       ) : (
@@ -799,7 +1019,9 @@ export default function AdminManagementPage() {
                         <div>
                           <p>{fmtDate(admin.lastLogin.at)}</p>
                           {admin.lastLogin.ip && (
-                            <p className="text-white/30 mt-0.5">{admin.lastLogin.ip}</p>
+                            <p className="text-white/30 mt-0.5">
+                              {admin.lastLogin.ip}
+                            </p>
                           )}
                         </div>
                       ) : (
@@ -814,7 +1036,9 @@ export default function AdminManagementPage() {
                         <button
                           onClick={() => setGenerateTarget(admin)}
                           disabled={!admin.isActive}
-                          title={admin.isActive ? "Generate Token" : "Admin nonaktif"}
+                          title={
+                            admin.isActive ? "Generate Token" : "Admin nonaktif"
+                          }
                           className="flex items-center gap-1.5 border border-white/20 text-white text-xs rounded-lg px-2.5 py-1.5 hover:bg-white/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <IconKey />
@@ -830,14 +1054,25 @@ export default function AdminManagementPage() {
                             admin.isActive
                               ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
                               : "text-green-400 hover:text-green-300 hover:bg-green-500/10",
-                            togglingId === admin.id ? "opacity-50 cursor-not-allowed" : "",
+                            togglingId === admin.id
+                              ? "opacity-50 cursor-not-allowed"
+                              : "",
                           ].join(" ")}
                         >
                           {togglingId === admin.id
                             ? "..."
                             : admin.isActive
-                            ? "Nonaktifkan"
-                            : "Aktifkan"}
+                              ? "Nonaktifkan"
+                              : "Aktifkan"}
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          onClick={() => setDeleteTarget(admin)}
+                          title="Hapus admin"
+                          className="text-xs rounded-lg px-2.5 py-1.5 text-red-400/70 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                        >
+                          Hapus
                         </button>
                       </div>
                     </td>
@@ -869,6 +1104,14 @@ export default function AdminManagementPage() {
         <TokenResultModal
           result={tokenResult}
           onClose={() => setTokenResult(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          admin={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onSuccess={fetchAdmins}
         />
       )}
     </main>

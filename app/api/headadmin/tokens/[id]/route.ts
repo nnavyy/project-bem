@@ -32,9 +32,23 @@ export async function PATCH(
   const token = await prisma.tokenAdmin.findUnique({
     where: { id },
     include: {
-      admin: { select: { id: true, username: true, nama: true, role: true, isDeveloper: true } },
+      admin: {
+        select: {
+          id: true,
+          username: true,
+          nama: true,
+          role: true,
+          isDeveloper: true,
+        },
+      },
       headAdmin: {
-        select: { id: true, username: true, nama: true, role: true, isDeveloper: true },
+        select: {
+          id: true,
+          username: true,
+          nama: true,
+          role: true,
+          isDeveloper: true,
+        },
       },
     },
   });
@@ -46,10 +60,48 @@ export async function PATCH(
     );
   }
 
-  // ── PROTEKSI: Token SUPER_ADMIN tidak bisa direvoke siapapun ──
+  // ── PROTEKSI: Token SUPER_ADMIN tidak bisa direvoke — tapi catat percobaan ──
   if (token.tokenRole === "SUPER_ADMIN") {
+    // Log the attempt
+    await logAktivitas({
+      adminId: user.id,
+      aksi: "REVOKE_TOKEN",
+      entityType: "TokenAdmin",
+      entityId: token.id,
+      tokenId: token.id,
+      dataBefore: { isRevoked: token.isRevoked, tokenRole: token.tokenRole },
+      dataAfter: null,
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: `PERCOBAAN revoke token SUPER_ADMIN oleh @${user.role} (${user.id}). Akses ditolak.`,
+    });
+
+    // Create a notification RequestApproval for superadmin
+    const existingNotif = await prisma.requestApproval.findFirst({
+      where: {
+        tokenId: token.id,
+        jenis: "REVOKE_TOKEN_SUPERADMIN",
+        status: "PENDING",
+      },
+    });
+
+    if (!existingNotif) {
+      await prisma.requestApproval.create({
+        data: {
+          jenis: "REVOKE_TOKEN_SUPERADMIN",
+          status: "PENDING",
+          tokenId: token.id,
+          diajukanOleh: user.id,
+          catatanAdmin: `Percobaan revoke token Super Admin pada ${new Date().toISOString()}`,
+        },
+      });
+    }
+
     return NextResponse.json(
-      { message: "Aksi Ditolak: Token Super Admin tidak dapat di-revoke." },
+      {
+        message:
+          "Aksi Ditolak: Token Super Admin tidak dapat di-revoke. Super Admin telah diberitahu.",
+      },
       { status: 403 },
     );
   }
@@ -57,7 +109,10 @@ export async function PATCH(
   // ── PROTEKSI: Token bootstrap (generatedBy=null) tidak bisa direvoke ──
   if (token.generatedBy === null) {
     return NextResponse.json(
-      { message: "Aksi Ditolak: Token ini dibuat langsung oleh Sistem/Developer dan tidak dapat di-revoke." },
+      {
+        message:
+          "Aksi Ditolak: Token ini dibuat langsung oleh Sistem/Developer dan tidak dapat di-revoke.",
+      },
       { status: 403 },
     );
   }
@@ -88,14 +143,21 @@ export async function PATCH(
 
     return NextResponse.json({
       message: "Token berhasil direvoke",
-      data: { id: updated.id, isRevoked: updated.isRevoked, revokedAt: updated.revokedAt },
+      data: {
+        id: updated.id,
+        isRevoked: updated.isRevoked,
+        revokedAt: updated.revokedAt,
+      },
     });
   }
 
   // ── HEAD_ADMIN: tidak boleh revoke token milik dirinya sendiri ──
   if (token.adminId === user.id) {
     return NextResponse.json(
-      { message: "Aksi Ditolak: Anda tidak dapat merevoke token milik Anda sendiri." },
+      {
+        message:
+          "Aksi Ditolak: Anda tidak dapat merevoke token milik Anda sendiri.",
+      },
       { status: 403 },
     );
   }
@@ -126,7 +188,11 @@ export async function PATCH(
 
     return NextResponse.json({
       message: "Token berhasil direvoke",
-      data: { id: updated.id, isRevoked: updated.isRevoked, revokedAt: updated.revokedAt },
+      data: {
+        id: updated.id,
+        isRevoked: updated.isRevoked,
+        revokedAt: updated.revokedAt,
+      },
     });
   }
 
@@ -147,7 +213,10 @@ export async function PATCH(
 
     if (existingPending) {
       return NextResponse.json(
-        { message: "Request revoke untuk token ini sudah ada dan sedang menunggu persetujuan Super Admin." },
+        {
+          message:
+            "Request revoke untuk token ini sudah ada dan sedang menunggu persetujuan Super Admin.",
+        },
         { status: 409 },
       );
     }
@@ -161,11 +230,15 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({
-      message: "Request revoke token HEAD_ADMIN berhasil diajukan. Menunggu persetujuan Super Admin.",
-      pending: true,
-      requestId: request.id,
-    }, { status: 202 });
+    return NextResponse.json(
+      {
+        message:
+          "Request revoke token HEAD_ADMIN berhasil diajukan. Menunggu persetujuan Super Admin.",
+        pending: true,
+        requestId: request.id,
+      },
+      { status: 202 },
+    );
   }
 
   return NextResponse.json({ message: "Aksi tidak valid" }, { status: 400 });
