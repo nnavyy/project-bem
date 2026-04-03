@@ -107,13 +107,13 @@ export async function POST(req: NextRequest) {
         token: plainToken,
         tokenId: created.id,
         tokenRole: created.tokenRole,
-        meta: { 
-          admin: targetAdmin ? { id: targetAdmin.id, username: targetAdmin.username, nama: targetAdmin.nama, role: targetAdmin.role } : null, 
-          generatedBy: { id: requester.id, username: requester.username, nama: requester.nama, role: requester.role }, 
-          isPermanent: created.isPermanent, 
-          expiredAt: created.expiredAt, 
-          isSingleUse: created.isSingleUse, 
-          createdAt: created.createdAt 
+        meta: {
+          admin: targetAdmin ? { id: targetAdmin.id, username: targetAdmin.username, nama: targetAdmin.nama, role: targetAdmin.role } : null,
+          generatedBy: { id: requester.id, username: requester.username, nama: requester.nama, role: requester.role },
+          isPermanent: created.isPermanent,
+          expiredAt: created.expiredAt,
+          isSingleUse: created.isSingleUse,
+          createdAt: created.createdAt
         },
       }, { status: 201 });
     }
@@ -219,13 +219,13 @@ export async function POST(req: NextRequest) {
       token: plainToken,
       tokenId: created.id,
       tokenRole: created.tokenRole,
-      meta: { 
-        admin: targetAdmin ? { id: targetAdmin.id, username: targetAdmin.username, nama: targetAdmin.nama, role: targetAdmin.role } : null, 
-        generatedBy: { id: requester.id, username: requester.username, nama: requester.nama, role: requester.role }, 
-        isPermanent: created.isPermanent, 
-        expiredAt: created.expiredAt, 
-        isSingleUse: created.isSingleUse, 
-        createdAt: created.createdAt 
+      meta: {
+        admin: targetAdmin ? { id: targetAdmin.id, username: targetAdmin.username, nama: targetAdmin.nama, role: targetAdmin.role } : null,
+        generatedBy: { id: requester.id, username: requester.username, nama: requester.nama, role: requester.role },
+        isPermanent: created.isPermanent,
+        expiredAt: created.expiredAt,
+        isSingleUse: created.isSingleUse,
+        createdAt: created.createdAt
       },
     }, { status: 201 });
 
