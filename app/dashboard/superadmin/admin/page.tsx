@@ -827,15 +827,36 @@ export default function AdminManagementPage() {
 
   async function handleToggleActive(admin: AdminRow) {
     setTogglingId(admin.id);
+    // Optimistic update — langsung ubah state agar UI responsif tanpa refresh
+    setAdmins((prev) =>
+      prev.map((a) =>
+        a.id === admin.id ? { ...a, isActive: !a.isActive } : a,
+      ),
+    );
     try {
       const res = await fetch("/api/headadmin/admin", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: admin.id, isActive: !admin.isActive }),
       });
-      if (res.ok) fetchAdmins();
+      if (res.ok) {
+        // Re-fetch to sync with server data
+        fetchAdmins();
+      } else {
+        // Rollback jika gagal
+        setAdmins((prev) =>
+          prev.map((a) =>
+            a.id === admin.id ? { ...a, isActive: admin.isActive } : a,
+          ),
+        );
+      }
     } catch {
-      // silently ignore, user can retry
+      // Rollback jika error
+      setAdmins((prev) =>
+        prev.map((a) =>
+          a.id === admin.id ? { ...a, isActive: admin.isActive } : a,
+        ),
+      );
     } finally {
       setTogglingId(null);
     }

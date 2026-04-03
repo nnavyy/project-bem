@@ -7,6 +7,9 @@ import { logAktivitas, getRequestMeta } from "@/lib/logger";
  * PATCH /api/superadmin/requests/[id]
  * Approve atau Reject sebuah request — hanya SUPER_ADMIN
  * Body: { action: "APPROVE" | "REJECT" }
+ *
+ * NOTE: PrismaNeonHttp adapter tidak mendukung transactions.
+ * Semua operasi dilakukan secara sequential tanpa implicit transaction.
  */
 export async function PATCH(
   req: NextRequest,
@@ -30,17 +33,27 @@ export async function PATCH(
       );
     }
 
+    // Ambil request TANPA include/nested relations (hindari implicit transaction)
     const request = await prisma.requestApproval.findUnique({
       where: { id },
-      include: {
-        token: true,
-        pengaju: { select: { id: true, username: true, nama: true } },
-      },
     });
 
     if (!request) {
       return NextResponse.json(
         { message: "Request tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
+    // Ambil info pengaju secara terpisah
+    const pengaju = await prisma.admin.findUnique({
+      where: { id: request.diajukanOleh },
+      select: { id: true, username: true, nama: true, role: true },
+    });
+
+    if (!pengaju) {
+      return NextResponse.json(
+        { message: "Pengaju tidak ditemukan" },
         { status: 404 },
       );
     }
@@ -59,7 +72,6 @@ export async function PATCH(
     // ── GENERATE_TOKEN_HEADADMIN ──
     if (request.jenis === "GENERATE_TOKEN_HEADADMIN") {
       if (body.action === "APPROVE" && request.tokenId) {
-        // Aktifkan token (isRevoked=false)
         await prisma.tokenAdmin.update({
           where: { id: request.tokenId },
           data: { isRevoked: false },
@@ -73,10 +85,15 @@ export async function PATCH(
           tokenId: request.tokenId,
           ipAddress: ip,
           userAgent: ua,
-          keterangan: `Request generate token HEAD_ADMIN dari @${request.pengaju.username} disetujui.`,
+          keterangan: `Request generate token HEAD_ADMIN dari @${pengaju.username} disetujui.`,
         });
       } else if (body.action === "REJECT" && request.tokenId) {
-        // Hard delete token yang terkunci agar tidak mengotori DB
+        // Sebelum delete token, unlink dari request dulu
+        await prisma.requestApproval.update({
+          where: { id },
+          data: { tokenId: null },
+        });
+
         await prisma.tokenAdmin.delete({ where: { id: request.tokenId } });
 
         await logAktivitas({
@@ -86,7 +103,7 @@ export async function PATCH(
           entityId: id,
           ipAddress: ip,
           userAgent: ua,
-          keterangan: `Request generate token HEAD_ADMIN dari @${request.pengaju.username} ditolak. Token dihapus.`,
+          keterangan: `Request generate token HEAD_ADMIN dari @${pengaju.username} ditolak. Token dihapus.`,
         });
       }
     }
@@ -94,7 +111,6 @@ export async function PATCH(
     // ── REVOKE_TOKEN_HEADADMIN ──
     if (request.jenis === "REVOKE_TOKEN_HEADADMIN") {
       if (body.action === "APPROVE" && request.tokenId) {
-        // Eksekusi revoke
         await prisma.tokenAdmin.update({
           where: { id: request.tokenId },
           data: { isRevoked: true, revokedAt: new Date() },
@@ -108,7 +124,7 @@ export async function PATCH(
           tokenId: request.tokenId,
           ipAddress: ip,
           userAgent: ua,
-          keterangan: `Request revoke token HEAD_ADMIN dari @${request.pengaju.username} disetujui dan token direvoke.`,
+          keterangan: `Request revoke token HEAD_ADMIN dari @${pengaju.username} disetujui dan token direvoke.`,
         });
       } else {
         await logAktivitas({
@@ -119,7 +135,7 @@ export async function PATCH(
           tokenId: request.tokenId ?? undefined,
           ipAddress: ip,
           userAgent: ua,
-          keterangan: `Request revoke token HEAD_ADMIN dari @${request.pengaju.username} ditolak.`,
+          keterangan: `Request revoke token HEAD_ADMIN dari @${pengaju.username} ditolak.`,
         });
       }
     }
@@ -127,14 +143,12 @@ export async function PATCH(
     // ── CREATE_HEADADMIN ──
     if (request.jenis === "CREATE_HEADADMIN") {
       if (body.action === "APPROVE" && request.catatanAdmin) {
-        // Parse data akun dari catatanAdmin
         const accountData = JSON.parse(request.catatanAdmin) as {
           username: string;
           nama: string;
           role: string;
         };
 
-        // Cek apakah username sudah terpakai (mungkin sudah dibuat saat menunggu approval)
         const existing = await prisma.admin.findUnique({
           where: { username: accountData.username },
         });
@@ -147,7 +161,6 @@ export async function PATCH(
           );
         }
 
-        // Buat akun HEAD_ADMIN
         const created = await prisma.admin.create({
           data: {
             username: accountData.username,
@@ -164,7 +177,7 @@ export async function PATCH(
           entityId: created.id,
           ipAddress: ip,
           userAgent: ua,
-          keterangan: `Request pembuatan akun HEAD_ADMIN "${accountData.username}" dari @${request.pengaju.username} disetujui. Akun berhasil dibuat.`,
+          keterangan: `Request pembuatan akun HEAD_ADMIN "${accountData.username}" dari @${pengaju.username} disetujui. Akun berhasil dibuat.`,
         });
       } else {
         await logAktivitas({
@@ -174,14 +187,13 @@ export async function PATCH(
           entityId: id,
           ipAddress: ip,
           userAgent: ua,
-          keterangan: `Request pembuatan akun HEAD_ADMIN dari @${request.pengaju.username} ditolak.`,
+          keterangan: `Request pembuatan akun HEAD_ADMIN dari @${pengaju.username} ditolak.`,
         });
       }
     }
 
     // ── REVOKE_TOKEN_SUPERADMIN ──
     if (request.jenis === "REVOKE_TOKEN_SUPERADMIN") {
-      // This is just a notification — cannot be approved (SUPER_ADMIN can only dismiss it)
       if (body.action === "APPROVE") {
         return NextResponse.json(
           {
@@ -191,7 +203,6 @@ export async function PATCH(
           { status: 400 },
         );
       }
-      // REJECT = dismiss the notification
       await logAktivitas({
         adminId: user.id,
         aksi: "REJECT_REQUEST",
@@ -199,29 +210,51 @@ export async function PATCH(
         entityId: id,
         ipAddress: ip,
         userAgent: ua,
-        keterangan: `Notifikasi percobaan revoke token Super Admin dari @${request.pengaju.username} ditutup.`,
+        keterangan: `Notifikasi percobaan revoke token Super Admin dari @${pengaju.username} ditutup.`,
       });
     }
 
-    // Update status request
-    const updated = await prisma.requestApproval.update({
+    // Update status request — TANPA include (hindari implicit transaction di NeonHttp)
+    await prisma.requestApproval.update({
       where: { id },
       data: {
         status: newStatus,
         diprosesByAdmin: user.id,
-        // Hapus plain token dari catatan setelah reject (bersihkan)
         catatanAdmin: body.action === "REJECT" ? null : request.catatanAdmin,
       },
-      include: {
-        pengaju: { select: { id: true, username: true, nama: true, role: true } },
-        pemroses: {
-          select: { id: true, username: true, nama: true, role: true },
-        },
-        token: {
-          select: { id: true, tokenRole: true, isRevoked: true, adminId: true },
-        },
+    });
+
+    // Ambil data updated secara terpisah
+    const updated = await prisma.requestApproval.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        jenis: true,
+        status: true,
+        tokenId: true,
+        catatanAdmin: true,
+        createdAt: true,
+        updatedAt: true,
+        diajukanOleh: true,
+        diprosesByAdmin: true,
       },
     });
+
+    // Ambil relasi secara terpisah
+    const pemroses = updated?.diprosesByAdmin
+      ? await prisma.admin.findUnique({
+          where: { id: updated.diprosesByAdmin },
+          select: { id: true, username: true, nama: true, role: true },
+        })
+      : null;
+
+    let tokenInfo = null;
+    if (updated?.tokenId) {
+      tokenInfo = await prisma.tokenAdmin.findUnique({
+        where: { id: updated.tokenId },
+        select: { id: true, tokenRole: true, isRevoked: true, adminId: true },
+      });
+    }
 
     return NextResponse.json({
       message:
@@ -230,7 +263,9 @@ export async function PATCH(
           : "Request berhasil ditolak",
       data: {
         ...updated,
-        // Saat approve generate token, kembalikan plain token agar bisa ditampilkan ke pengaju
+        pengaju,
+        pemroses,
+        token: tokenInfo,
         plainToken:
           body.action === "APPROVE" &&
           request.jenis === "GENERATE_TOKEN_HEADADMIN"

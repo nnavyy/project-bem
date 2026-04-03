@@ -57,30 +57,74 @@ export async function DELETE(
   }
 
   try {
-    // Revoke semua token aktif admin ini
+    // 1. Revoke semua token aktif admin ini
     await prisma.tokenAdmin.updateMany({
       where: { adminId: id, isRevoked: false },
       data: { isRevoked: true, revokedAt: new Date() },
     });
 
-    // Unlink dari laporan (set ditindakOleh = null)
+    // 2. Unlink dari laporan (set ditindakOleh = null) — onDelete: SetNull
     await prisma.laporan.updateMany({
       where: { ditindakOleh: id },
       data: { ditindakOleh: null },
     });
 
-    // Hapus tindakLanjutLaporan yang dibuat oleh admin ini
+    // 3. Hapus tindakLanjutLaporan yang dibuat oleh admin ini — onDelete: Restrict
     await prisma.tindakLanjutLaporan.deleteMany({
       where: { adminId: id },
     });
 
-    // Hapus request approval yang diajukan oleh admin ini (jika masih pending)
-    await prisma.requestApproval.updateMany({
-      where: { diajukanOleh: id, status: "PENDING" },
-      data: { status: "REJECTED" },
+    // 4. Unlink blog (set penulisId = null) — onDelete: SetNull
+    await prisma.blog.updateMany({
+      where: { penulisId: id },
+      data: { penulisId: null },
     });
 
-    // Log before delete
+    // 5. Hapus galeri dari portofolio milik admin ini, lalu hapus portofolionya — onDelete: Restrict
+    const portofolios = await prisma.portofolio.findMany({
+      where: { adminId: id },
+      select: { id: true },
+    });
+    if (portofolios.length > 0) {
+      const portofolioIds = portofolios.map((p) => p.id);
+      await prisma.galeri.deleteMany({
+        where: { portofolioId: { in: portofolioIds } },
+      });
+      await prisma.portofolio.deleteMany({
+        where: { adminId: id },
+      });
+    }
+
+    // 6. Hapus log aktivitas admin ini — onDelete: Restrict
+    await prisma.logAktivitasAdmin.deleteMany({
+      where: { adminId: id },
+    });
+
+    // 7. Unlink token yang di-generate oleh admin (generatedBy) — onDelete: SetNull
+    await prisma.tokenAdmin.updateMany({
+      where: { generatedBy: id },
+      data: { generatedBy: null },
+    });
+
+    // 8. Unlink token yang dimiliki admin (adminId) — onDelete: SetNull
+    await prisma.tokenAdmin.updateMany({
+      where: { adminId: id },
+      data: { adminId: null },
+    });
+
+    // 9. Handle request approval — diajukanOleh onDelete: Restrict
+    // Reject pending ones and delete all requests by this admin
+    await prisma.requestApproval.deleteMany({
+      where: { diajukanOleh: id },
+    });
+
+    // 10. Unlink request yang diproses oleh admin ini — onDelete: SetNull
+    await prisma.requestApproval.updateMany({
+      where: { diprosesByAdmin: id },
+      data: { diprosesByAdmin: null },
+    });
+
+    // Log before delete (use superadmin's own id, not the target's)
     await logAktivitas({
       adminId: user.id,
       aksi: "DELETE_ADMIN",
@@ -99,7 +143,7 @@ export async function DELETE(
       keterangan: `Akun ${target.role} "@${target.username}" (${target.nama}) dihapus permanen oleh Super Admin.`,
     });
 
-    // Hapus admin
+    // 11. Hapus admin
     await prisma.admin.delete({ where: { id } });
 
     return NextResponse.json({
