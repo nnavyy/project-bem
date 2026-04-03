@@ -881,7 +881,7 @@ export default function PortofolioPage() {
                                       );
                                     else throw new Error("Gagal upload");
                                   } catch (err) {
-                                    alert("Gagal mengupload foto anggota");
+                                    setFormError(err instanceof Error ? err.message : "Gagal mengupload foto anggota");
                                   } finally {
                                     updateAnggota(
                                       g._tempId,

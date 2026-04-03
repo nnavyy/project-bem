@@ -26,7 +26,7 @@ export async function GET() {
   } catch (err) {
     console.error("Error GET /portofolio:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }
@@ -83,21 +83,47 @@ export async function POST(req: NextRequest) {
         deskripsi,
         fotoUtama: body.fotoUtama ?? undefined,
         tanggalKegiatan: tanggalKegiatan ?? undefined,
-        admin: { connect: { id: user.id } },
-        galeri: {
-          create:
-            (body.galeri ?? []).map((g) => ({
-              namaAnggota: g.namaAnggota,
-              jabatan: g.jabatan ?? undefined,
-              foto: g.foto ?? undefined,
-              urutan: g.urutan ?? 0,
-            })) ?? [],
-        },
-      },
-      include: {
-        galeri: { orderBy: { urutan: "asc" } },
+        adminId: user.id,
       },
     });
+
+    if (body.galeri && body.galeri.length > 0) {
+      for (const g of body.galeri) {
+        await prisma.galeri.create({
+          data: {
+            portofolioId: created.id,
+            namaAnggota: g.namaAnggota,
+            jabatan: g.jabatan ?? undefined,
+            foto: g.foto ?? undefined,
+            urutan: g.urutan ?? 0,
+          }
+        });
+      }
+    }
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: user.id },
+      select: { id: true, username: true, nama: true, role: true }
+    });
+
+    const mockGaleri = (body.galeri && body.galeri.length > 0)
+      ? body.galeri.map(g => ({
+          id: "temp-" + Math.random(),
+          portofolioId: created.id,
+          namaAnggota: g.namaAnggota,
+          jabatan: g.jabatan ?? null,
+          foto: g.foto ?? null,
+          urutan: g.urutan ?? 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }))
+      : [];
+
+    const createdWithGaleri = {
+      ...created,
+      admin,
+      galeri: mockGaleri
+    };
 
     await logAktivitas({
       adminId: user.id,
@@ -105,16 +131,16 @@ export async function POST(req: NextRequest) {
       entityType: "Portofolio",
       entityId: created.id,
       dataBefore: null,
-      dataAfter: created as unknown as Prisma.InputJsonValue,
+      dataAfter: createdWithGaleri as unknown as Prisma.InputJsonValue,
       ipAddress: ip,
       userAgent: ua,
     });
 
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(createdWithGaleri, { status: 201 });
   } catch (err) {
     console.error("Error POST /portofolio:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }
@@ -185,20 +211,37 @@ export async function PUT(req: NextRequest) {
             : body.tanggalKegiatan
               ? new Date(body.tanggalKegiatan)
               : undefined,
-        ...(body.galeri !== undefined && {
-          galeri: {
-            deleteMany: {},
-            create: body.galeri.map((g) => ({
+      },
+    });
+
+    if (body.galeri !== undefined) {
+      await prisma.$executeRawUnsafe(
+        `DELETE FROM "Galeri" WHERE "portofolioId" = $1`,
+        id
+      );
+
+      if (body.galeri.length > 0) {
+        for (const g of body.galeri) {
+          await prisma.galeri.create({
+            data: {
+              portofolioId: id,
               namaAnggota: g.namaAnggota,
               jabatan: g.jabatan ?? undefined,
               foto: g.foto ?? undefined,
               urutan: g.urutan ?? 0,
-            })),
-          },
-        }),
-      },
-      include: { galeri: { orderBy: { urutan: "asc" } } },
-    });
+            }
+          });
+        }
+      }
+    }
+
+    const updatedWithGaleri = {
+      ...updated,
+      galeri: await prisma.galeri.findMany({
+        where: { portofolioId: id },
+        orderBy: { urutan: "asc" }
+      })
+    };
 
     await logAktivitas({
       adminId: user.id,
@@ -206,16 +249,16 @@ export async function PUT(req: NextRequest) {
       entityType: "Portofolio",
       entityId: id,
       dataBefore: before as unknown as Prisma.InputJsonValue,
-      dataAfter: updated as unknown as Prisma.InputJsonValue,
+      dataAfter: updatedWithGaleri as unknown as Prisma.InputJsonValue,
       ipAddress: ip,
       userAgent: ua,
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(updatedWithGaleri);
   } catch (err) {
     console.error("Error PUT /portofolio:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }
@@ -276,7 +319,7 @@ export async function DELETE(req: NextRequest) {
   } catch (err) {
     console.error("Error DELETE /portofolio:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }

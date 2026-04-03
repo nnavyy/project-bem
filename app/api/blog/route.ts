@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("Error GET /api/blog:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }
@@ -99,10 +99,17 @@ export async function POST(req: NextRequest) {
         slug,
         penulisId: user.id,
       },
-      include: {
-        penulis: { select: { id: true, nama: true, role: true } },
-      },
     });
+
+    const penulis = await prisma.admin.findUnique({
+      where: { id: user.id },
+      select: { id: true, nama: true, role: true }
+    });
+
+    const createdWithPenulis = {
+      ...created,
+      penulis
+    };
 
     await logAktivitas({
       adminId: user.id,
@@ -110,23 +117,16 @@ export async function POST(req: NextRequest) {
       entityType: "Blog",
       entityId: created.id,
       dataBefore: null,
-      dataAfter: serializeDates({
-        id: created.id,
-        judul: created.judul,
-        slug: created.slug,
-        status: created.status,
-        gambar: created.gambar,
-        createdAt: created.createdAt,
-      }),
+      dataAfter: serializeDates(createdWithPenulis),
       ipAddress: ip,
       userAgent: ua,
     });
 
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(createdWithPenulis, { status: 201 });
   } catch (err) {
     console.error("Error POST /api/blog:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }
@@ -209,8 +209,17 @@ export async function PUT(req: NextRequest) {
     const updated = await prisma.blog.update({
       where: { id },
       data: dataToUpdate,
-      include: { penulis: { select: { id: true, nama: true, role: true } } },
     });
+
+    const penulis = await prisma.admin.findUnique({
+      where: { id: updated.penulisId! },
+      select: { id: true, nama: true, role: true }
+    });
+
+    const updatedWithPenulis = {
+      ...updated,
+      penulis
+    };
 
     await logAktivitas({
       adminId: user.id,
@@ -230,11 +239,11 @@ export async function PUT(req: NextRequest) {
       userAgent: ua,
     });
 
-    return NextResponse.json(updated);
+    return NextResponse.json(updatedWithPenulis);
   } catch (err) {
     console.error("Error PUT /api/blog:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }
@@ -300,7 +309,7 @@ export async function DELETE(req: NextRequest) {
   } catch (err) {
     console.error("Error DELETE /api/blog:", err);
     return NextResponse.json(
-      { message: "Internal Server Error" },
+      { message: err instanceof Error ? err.message : "Internal Server Error" },
       { status: 500 },
     );
   }
