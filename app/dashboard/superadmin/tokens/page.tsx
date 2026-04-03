@@ -715,9 +715,9 @@ export default function TokenManagementPage() {
   const [filterRole, setFilterRole] = useState<FilterRole>("all");
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 
-  // Revoke state
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [revokeError, setRevokeError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Token result modal
   const [tokenResult, setTokenResult] = useState<GenerateTokenResult | null>(
@@ -784,6 +784,28 @@ export default function TokenManagementPage() {
       setRevokeError("Gagal menghubungi server.");
     } finally {
       setRevokingId(null);
+    }
+  }
+
+  async function handleDelete(token: TokenRow) {
+    if (!confirm("Yakin ingin menghapus history token ini secara permanen?")) return;
+    setDeletingId(token.id);
+    setRevokeError(null);
+    try {
+      const res = await fetch(`/api/headadmin/tokens/${token.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        // Optimistic UI updates
+        setTokens((prev) => prev.filter((t) => t.id !== token.id));
+      } else {
+        const data = await res.json();
+        setRevokeError(data.message ?? "Gagal menghapus token.");
+      }
+    } catch {
+      setRevokeError("Gagal menghubungi server.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -1133,19 +1155,26 @@ export default function TokenManagementPage() {
 
                       {/* Aksi */}
                       <td className="py-3 px-4">
-                        {status === "active" ? (
-                          <button
-                            onClick={() => handleRevoke(token)}
-                            disabled={isRevoking}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                          >
-                            {isRevoking ? "Revoking..." : "Revoke"}
-                          </button>
-                        ) : (
-                          <span className="text-white/20 text-xs px-3 py-1.5">
-                            —
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          {status === "active" ? (
+                            <button
+                              onClick={() => handleRevoke(token)}
+                              disabled={isRevoking}
+                              className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 text-xs rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                            >
+                              {isRevoking ? "Revoking..." : "Revoke"}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleDelete(token)}
+                              disabled={deletingId === token.id}
+                              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                              title="Hapus history token permanen"
+                            >
+                              {deletingId === token.id ? "Menghapus..." : "Hapus"}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

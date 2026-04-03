@@ -245,12 +245,80 @@ export async function PATCH(
 }
 
 /**
- * Backward-compat: previously this endpoint used DELETE for hard delete.
- * Now we disallow hard delete to preserve history/audit.
+ * DELETE /api/headadmin/tokens/[id]
+ * Hapus permanen token (History).
+ * Hanya bisa dilakukan pada token yang sudah direvoke ATAU sudah dipakai (single-use) ATAU kadaluarsa.
  */
-export async function DELETE() {
-  return NextResponse.json(
-    { message: "Hard delete dinonaktifkan. Gunakan PATCH untuk revoke token." },
-    { status: 405 },
-  );
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { ip, ua } = getRequestMeta(req);
+  const user = await verifyToken(req);
+
+  if (!user || (user.role !== "HEAD_ADMIN" && user.role !== "SUPER_ADMIN")) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const token = await prisma.tokenAdmin.findUnique({
+    where: { id },
+  });
+
+  if (!token) {
+    return NextResponse.json(
+      { message: "Token tidak ditemukan." },
+      { status: 404 },
+    );
+  }
+
+  // Apakah token ini layak dihapus? (sudah direvoke atau expired)
+  const isExpired =
+    !token.isPermanent &&
+    token.expiredAt &&
+    new Date(token.expiredAt) < new Date();
+  
+  if (!token.isRevoked && !isExpired) {
+    return NextResponse.json(
+      { message: "Hanya token yang sudah di-revoke atau kadaluarsa yang dapat dihapus." },
+      { status: 400 },
+    );
+  }
+
+  // SUPER_ADMIN bisa hapus apa saja. HEAD_ADMIN...
+  if (user.role === "HEAD_ADMIN" && token.tokenRole === "SUPER_ADMIN") {
+    return NextResponse.json(
+      { message: "Aksi Ditolak: Anda tidak dapat menghapus history token Super Admin." },
+      { status: 403 },
+    );
+  }
+
+  try {
+    // Unlink RequestApproval first
+    await prisma.requestApproval.updateMany({
+      where: { tokenId: id },
+      data: { tokenId: null },
+    });
+
+    await prisma.tokenAdmin.delete({ where: { id } });
+
+    await logAktivitas({
+      adminId: user.id,
+      aksi: "DELETE_TOKEN" as any,
+      entityType: "TokenAdmin",
+      entityId: id,
+      ipAddress: ip,
+      userAgent: ua,
+      keterangan: `Token riwayat telah dihapus permanen.`,
+    });
+
+    return NextResponse.json({ message: "Riwayat token berhasil dihapus permanen." });
+  } catch (err: any) {
+    console.error("[Token Delete Error]", err);
+    return NextResponse.json(
+      { message: "Terjadi kesalahan saat menghapus history." },
+      { status: 500 },
+    );
+  }
 }

@@ -143,8 +143,10 @@ export async function DELETE(
       keterangan: `Akun ${target.role} "@${target.username}" (${target.nama}) dihapus permanen oleh Super Admin.`,
     });
 
-    // 11. Hapus admin
-    await prisma.admin.delete({ where: { id } });
+    // 11. Hapus admin secara manual menggunakan executeRaw untuk menghindari 
+    // error "Transactions are not supported in HTTP mode" dari PrismaNeonHttp.
+    // (Karena kita sudah membersihkan semua table terkait secara manual di atas, ini aman)
+    await prisma.$executeRaw`DELETE FROM "Admin" WHERE id = ${id}`;
 
     return NextResponse.json({
       message: `Akun "@${target.username}" berhasil dihapus.`,
