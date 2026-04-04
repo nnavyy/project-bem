@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
   const cookieOpts = {
     path: "/",
     maxAge: 0,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
   } as const;
 
   res.cookies.set("next-auth.session-token", "", cookieOpts);

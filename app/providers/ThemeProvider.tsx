@@ -220,6 +220,86 @@ function removeLightCSS() {
   document.getElementById(STYLE_ID)?.remove();
 }
 
+// ─── Light Theme Warning Banner ──────────────────────────────────────────────
+function LightThemeBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Small delay so it slides in nicely after page load
+    const t = setTimeout(() => setVisible(true), 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (dismissed) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: "1.25rem",
+        right: "1.25rem",
+        zIndex: 9999,
+        maxWidth: "360px",
+        width: "calc(100vw - 2.5rem)",
+        transform: visible ? "translateY(0)" : "translateY(120%)",
+        opacity: visible ? 1 : 0,
+        transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease",
+        backgroundColor: "#fffbeb",
+        border: "1px solid #f59e0b",
+        borderRadius: "0.875rem",
+        padding: "1rem 1rem 1rem 1.125rem",
+        boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+        display: "flex",
+        gap: "0.75rem",
+        alignItems: "flex-start",
+      }}
+      role="alert"
+      aria-live="polite"
+    >
+      {/* Icon */}
+      <div style={{ flexShrink: 0, marginTop: "2px" }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontWeight: 600, fontSize: "0.8125rem", color: "#92400e" }}>
+          🎨 Tema Terang — Beta
+        </p>
+        <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", lineHeight: 1.5, color: "#b45309" }}>
+          Beberapa bagian tampilan mungkin belum sempurna. Kami sedang memperbaikinya. Gunakan <strong>Tema Gelap</strong> untuk pengalaman terbaik.
+        </p>
+      </div>
+
+      {/* Dismiss */}
+      <button
+        onClick={() => setDismissed(true)}
+        aria-label="Tutup notifikasi"
+        style={{
+          flexShrink: 0,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: "2px",
+          color: "#b45309",
+          borderRadius: "4px",
+          lineHeight: 1,
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
@@ -260,6 +340,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
+      {theme === "light" && <LightThemeBanner />}
     </ThemeContext.Provider>
   );
 }

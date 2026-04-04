@@ -646,12 +646,12 @@ export default function PortofolioPage() {
                 </label>
 
                 {form.fotoUtama.trim() ? (
-                  <div className="relative rounded-lg overflow-hidden border border-white/10 h-36 bg-black/20">
+                  <div className="relative rounded-lg overflow-hidden border border-white/10 h-48 bg-black/20">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={form.fotoUtama}
                       alt="Preview"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).style.display =
                           "none";
@@ -1050,7 +1050,7 @@ export default function PortofolioPage() {
               <div className="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                 {showPreview ? (
                   <div className="bg-white text-slate-800 rounded-xl overflow-hidden shadow-xl border border-white/10">
-                    <div className="relative h-64 bg-slate-200">
+                    <div className="relative h-72 bg-slate-200">
                       {target.fotoUtama ? (
                         <img
                           src={target.fotoUtama}
@@ -1135,12 +1135,12 @@ export default function PortofolioPage() {
                   <>
                     {/* Foto utama */}
                     {target.fotoUtama && (
-                      <div className="mb-5 rounded-xl overflow-hidden border border-white/10 h-48 bg-black/20">
+                      <div className="mb-5 rounded-xl overflow-hidden border border-white/10 h-64 bg-black/20">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={target.fotoUtama}
                           alt={target.namaDivisi}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           onError={(e) => {
                             (
                               e.currentTarget as HTMLImageElement

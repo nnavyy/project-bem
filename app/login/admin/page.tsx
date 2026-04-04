@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#1f2c44] to-[#0f172a] px-4 py-10 text-white sm:px-6">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#020617]/90 p-6 shadow-2xl backdrop-blur sm:p-8">
+        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#020617] p-6 shadow-2xl backdrop-blur sm:p-8">
           <p className="text-xs uppercase tracking-[0.2em] text-white/60">BEM ITESA</p>
           <h1 className="mt-2 text-2xl font-bold">Login Admin</h1>
           <p className="mt-2 text-sm text-white/70">
