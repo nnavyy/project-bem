@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
+import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
+
+// Configure Cloudinary explicitly if needed, but it automatically reads CLOUDINARY_URL from env if available.
+cloudinary.config({
+  secure: true
+});
 
 /**
  * POST /api/upload
  * Accepts a multipart form-data with a single file field named "file".
- * Saves the file under public/uploads/{subfolder}/{uuid}.{ext}
- * Returns the public URL path.
+ * Saves the file directly to Cloudinary bypassing local filesystem.
+ * Returns the public URL path (secure_url).
  *
  * Query params:
  *   subfolder – Optional. e.g. "blog", "portofolio", "galeri"
@@ -38,12 +41,13 @@ export async function POST(req: NextRequest) {
       "image/webp",
       "image/gif",
       "image/svg+xml",
+      "application/pdf",
     ];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         {
           message:
-            "Tipe file tidak didukung. Gunakan: JPG, PNG, WebP, GIF, atau SVG",
+            "Tipe file tidak didukung. Gunakan: JPG, PNG, WebP, GIF, SVG, atau PDF",
         },
         { status: 400 },
       );
@@ -58,27 +62,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine subfolder
+    // Determine subfolder and Cloudinary folder name
     const url = new URL(req.url);
     const subfolder = url.searchParams.get("subfolder") || "general";
     const safeSubfolder = subfolder.replace(/[^a-zA-Z0-9_-]/g, "");
+    
+    // Setup Cloudinary folder
+    const cloudinaryFolder = `bem-uploads/${safeSubfolder}`;
 
-    // Build file path
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filename = `${randomUUID()}.${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", safeSubfolder);
-
-    // Ensure directory exists
-    await mkdir(uploadDir, { recursive: true });
-
-    // Write file
+    // Read buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, buffer);
+
+    // Stream upload to Cloudinary
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: cloudinaryFolder, resource_type: "auto" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result as UploadApiResponse);
+        }
+      );
+      uploadStream.end(buffer);
+    });
 
     // Return the public URL
-    const publicUrl = `/uploads/${safeSubfolder}/${filename}`;
+    const publicUrl = result.secure_url;
 
     return NextResponse.json({ url: publicUrl }, { status: 201 });
   } catch (err) {
