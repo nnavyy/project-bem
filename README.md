@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project BEM ITESA
 
-## Getting Started
+> Website resmi Badan Eksekutif Mahasiswa Institut Teknologi Statistika dan Bisnis Muhammadiyah Semarang — dibangun dengan Next.js, Prisma, dan NeonDB.
 
-First, run the development server:
+🔗 **Live:** [project-bem.vercel.app](https://project-bem.vercel.app/dashboard)
+
+---
+
+## Fitur Utama
+
+### Suaraku ITESA
+Wadah resmi mahasiswa untuk menyampaikan aspirasi, kritik, dan keluhan secara aman dan terstruktur. Mahasiswa bisa login dan submit laporan yang langsung masuk ke dashboard admin.
+
+### Blog & Berita
+Halaman informasi terbaru seputar kegiatan BEM — pengumuman, dokumentasi program kerja, dan berita kampus.
+
+### Portofolio BEM
+Dokumentasi program kerja dan divisi BEM ITESA sebagai bentuk transparansi organisasi kepada seluruh mahasiswa.
+
+### Admin Mode (Multi-Role)
+Sistem dashboard bertingkat dengan 4 level akses:
+- **Mahasiswa** → Bisa submit & cek status laporan
+- **Admin** → Kelola laporan & konten
+- **Head Admin** → Supervisi admin
+- **Super Admin** → Akses penuh ke seluruh sistem
+
+---
+
+## Tech Stack
+
+| Layer | Teknologi |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| ORM | Prisma v6 |
+| Database | NeonDB (Serverless PostgreSQL) |
+| Auth | NextAuth v4 + JWT (jose) |
+| Storage | Cloudinary |
+| AI | Anthropic SDK |
+| Deploy | Vercel |
+
+---
+
+## Setup Lokal
+
+### Prerequisites
+- Node.js 18+
+- npm / pnpm
+- Akun NeonDB (buat database baru)
+- Akun Cloudinary (untuk upload gambar)
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/nnavyy/project-bem.git
+cd project-bem
+npm install
+```
+
+### 2. Setup Environment Variables
+
+Buat file `.env` di root project:
+
+```env
+# Database
+DATABASE_URL="postgresql://..."
+
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-here"
+
+# Cloudinary
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..."
+CLOUDINARY_API_KEY="..."
+CLOUDINARY_API_SECRET="..."
+
+# Anthropic AI (opsional)
+ANTHROPIC_API_KEY="..."
+```
+
+### 3. Setup Database
+
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Push schema ke database
+npx prisma db push
+
+# (Opsional) Seed data awal
+npm run bootstrap
+```
+
+### 4. Jalankan Dev Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka [http://localhost:3000](http://localhost:3000) di browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📁 Struktur Folder
 
-## Learn More
+```
+project-bem/
+├── app/                  # Next.js App Router (pages & API routes)
+│   ├── dashboard/        # Halaman publik (blog, portofolio, dll)
+│   ├── login/            # Halaman login per role
+│   └── api/              # API endpoints
+├── lib/                  # Utility & helper functions
+├── prisma/               # Schema database & seed script
+│   └── schema.prisma
+├── public/               # Aset statis (gambar, dll)
+├── middleware.ts          # Auth & role-based routing
+├── next.config.ts        # Konfigurasi Next.js
+└── package.json
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📸 Screenshots
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> 🖼️ *(Tambahkan screenshot UI di sini — homepage, dashboard mahasiswa, dashboard admin, halaman suaraku)*
 
-## Deploy on Vercel
+```
+public/images/screenshots/
+├── homepage.png
+├── dashboard-mahasiswa.png
+├── dashboard-admin.png
+└── suaraku.png
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 👥 Kontributor
+
+| Nama | Role |
+|---|---|
+| [Nanda Zhafran Mahendra] | Fullstack Developer |
+| [Nama 2] | UI/UX Designer |
+| [Nama 3] | Backend Developer |
+| [Nama 4] | Project Manager |
+
+> ✏️ *Isi bagian ini dengan nama tim kamu ya!*
+
+---
+
+## 📄 Lisensi
+
+Project ini bersifat **private / internal** — digunakan khusus untuk kebutuhan BEM ITESA. Tidak untuk didistribusikan secara publik.
+
+---
+
+<p align="center">© 2026 BEM ITESA · Institut Teknologi Statistika dan Bisnis Muhammadiyah Semarang</p>
+r
