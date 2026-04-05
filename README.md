@@ -1,5 +1,13 @@
 # Project BEM ITESA
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white" alt="Prisma" />
+  <img src="https://img.shields.io/badge/Neon-00E599?logo=neon&logoColor=white" alt="NeonDB" />
+</p>
+
 > Website resmi Badan Eksekutif Mahasiswa Institut Teknologi Statistika dan Bisnis Muhammadiyah Semarang — dibangun dengan Next.js, Prisma, dan NeonDB.
 
 🔗 **Live:** [project-bem.vercel.app](https://project-bem.vercel.app/dashboard)
@@ -99,6 +107,14 @@ npm run dev
 
 Buka [http://localhost:3000](http://localhost:3000) di browser.
 
+### 5. Build Production (Opsional)
+
+Untuk menjalankan versi production di lokal:
+```bash
+npm run build
+npm run start
+```
+
 ---
 
 ## Struktur Folder
@@ -120,15 +136,30 @@ project-bem/
 
 ---
 
-## Screenshoot
+## Tangkapan Layar (Screenshots)
 
-```
-public/images/screenshots/
-├── homepage.png
-├── dashboard-mahasiswa.png
-├── dashboard-admin.png
-└── suaraku.png
-```
+Berikut adalah beberapa tampilan dari Project BEM ITESA:
+
+<details>
+<summary><b>Klik untuk melihat tangkapan layar</b></summary>
+<br>
+
+**Homepage**
+![Homepage](/public/images/screenshots/homepage.png)
+
+**Dashboard Mahasiswa**
+![Dashboard Mahasiswa](/public/images/screenshots/dashboard-mahasiswa.png)
+
+**Dashboard Admin**
+![Dashboard Admin](/public/images/screenshots/dashboard-admin.png)
+
+**Dashboard HeadAdmin**
+![Dashboard HeadAdmin](/public/images/screenshots/dashboard-headadmin.png)
+
+**Dashboard SuperAdmin**
+![Dashboard SuperAdmin](/public/images/screenshots/dashboard-superadmin.png)
+
+</details>
 
 ---
 
@@ -150,4 +181,3 @@ Project ini bersifat **private / internal** — digunakan khusus untuk kebutuhan
 ---
 
 <p align="center">© 2026 BEM ITESA · Institut Teknologi Statistika dan Bisnis Muhammadiyah Semarang</p>
-r
