@@ -37,7 +37,6 @@ Sistem dashboard bertingkat dengan 4 level akses:
 | Database | NeonDB (Serverless PostgreSQL) |
 | Auth | NextAuth v4 + JWT (jose) |
 | Storage | Cloudinary |
-| AI | Anthropic SDK |
 | Deploy | Vercel |
 
 ---
@@ -102,7 +101,7 @@ Buka [http://localhost:3000](http://localhost:3000) di browser.
 
 ---
 
-## 📁 Struktur Folder
+## Struktur Folder
 
 ```
 project-bem/
@@ -121,9 +120,7 @@ project-bem/
 
 ---
 
-## 📸 Screenshots
-
-> 🖼️ *(Tambahkan screenshot UI di sini — homepage, dashboard mahasiswa, dashboard admin, halaman suaraku)*
+## Screenshoot
 
 ```
 public/images/screenshots/
@@ -135,7 +132,7 @@ public/images/screenshots/
 
 ---
 
-## 👥 Kontributor
+## Kontributor
 
 | Nama | Role |
 |---|---|
@@ -144,11 +141,9 @@ public/images/screenshots/
 | [Nama 3] | Backend Developer |
 | [Nama 4] | Project Manager |
 
-> ✏️ *Isi bagian ini dengan nama tim kamu ya!*
-
 ---
 
-## 📄 Lisensi
+## Lisensi
 
 Project ini bersifat **private / internal** — digunakan khusus untuk kebutuhan BEM ITESA. Tidak untuk didistribusikan secara publik.
 
