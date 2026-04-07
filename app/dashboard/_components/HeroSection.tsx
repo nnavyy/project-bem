@@ -11,9 +11,9 @@ export default function HeroSection() {
     <section className="relative min-h-[calc(100vh-68px)] overflow-hidden pb-20 pt-16 sm:pt-20">
       {/* BACKGROUND GEDUNG */}
       <img
-        src="/images/hero/bg-gedung.jpg"
+        src="/images/hero/fotobembersama.jpg"
         alt="Gedung ITESA"
-        className="absolute inset-0 w-full h-full object-cover blur-[2px] scale-105"
+        className="absolute inset-0 w-full h-full object-cover blur-[-90px] scale-105"
         />
         {/*className="absolute inset-0 w-full h-full scale 90"*/}
       
@@ -32,7 +32,7 @@ export default function HeroSection() {
         SELAMAT DATANG
       </h1>
 
-      {/* FOTO PRESMA (FULL BADAN, OVERLAP) */}
+      {/* FOTO PRESMA (FULL BADAN, OVERLAP) }
       <img
         src="/images/hero/presma.png"
         alt="Presiden Mahasiswa"
@@ -44,7 +44,7 @@ export default function HeroSection() {
           drop-shadow-2xl
           select-none
         "
-      />
+      /> */}
       <p
         style={{ fontFamily: "'Bebas Neue', sans-serif" }}
         className="

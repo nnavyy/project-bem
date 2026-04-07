@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { hashToken, signToken } from "@/lib/auth";
 import { getRequestMeta, logAktivitas } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { RoleAdmin } from "@prisma/client";
 
 type Body = {
@@ -13,8 +14,27 @@ type Body = {
  * POST /api/login/admin
  * Login untuk ADMIN / HEAD_ADMIN pakai username + token.
  */
+// Rate limit config: max 10 failed/success requests per 15 minutes per IP
+const RATE_LIMIT_OPTIONS = { maxRequests: 10, windowMs: 15 * 60 * 1000 };
+
 export async function POST(req: NextRequest) {
   const { ip, ua } = getRequestMeta(req);
+
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const rl = checkRateLimit(ip, RATE_LIMIT_OPTIONS);
+  if (rl.limited) {
+    return NextResponse.json(
+      { error: "Terlalu banyak percobaan login. Coba lagi beberapa menit." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(rl.resetInMs / 1000)),
+          "X-RateLimit-Limit": String(RATE_LIMIT_OPTIONS.maxRequests),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
 
   let body: Body;
   try {

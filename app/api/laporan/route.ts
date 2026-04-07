@@ -81,6 +81,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // NOTE: PrismaNeonHttp adapter tidak mendukung implicit transaction.
+    // create() dengan include() memicu implicit transaction → error.
+    // Solusi: pisahkan create dan relasi fetch menjadi dua query sequential.
     const laporan = await prisma.laporan.create({
       data: {
         judul,
@@ -93,21 +96,22 @@ export async function POST(req: NextRequest) {
         lampiranUrl: body.lampiranUrl ?? null,
         mahasiswaId: user.id,
       },
-      include: {
-        mahasiswa: {
-          select: {
-            id: true,
-            nim: true,
-            nama: true,
-            email: true,
-            jurusan: true,
-          },
-        },
+    });
+
+    // Fetch relasi mahasiswa secara terpisah
+    const mahasiswa = await prisma.mahasiswa.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        nim: true,
+        nama: true,
+        email: true,
+        jurusan: true,
       },
     });
 
     // Tidak ada log admin di sini (aksi mahasiswa).
-    return NextResponse.json(laporan, { status: 201 });
+    return NextResponse.json({ ...laporan, mahasiswa }, { status: 201 });
   } catch (err) {
     console.error("Error POST /api/laporan:", err);
     return NextResponse.json(
