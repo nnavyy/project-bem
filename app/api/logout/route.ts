@@ -9,7 +9,12 @@ export async function POST(req: NextRequest) {
   // Kalau JWT sudah tidak valid sekalipun, tetap lanjut hapus cookie.
   try {
     const user = await verifyToken(req);
-    if (user && (user.role === "ADMIN" || user.role === "HEAD_ADMIN" || user.role === "SUPER_ADMIN")) {
+    if (
+      user &&
+      (user.role === "ADMIN" ||
+        user.role === "HEAD_ADMIN" ||
+        user.role === "SUPER_ADMIN")
+    ) {
       await logAktivitas({
         adminId: user.id,
         aksi: "LOGOUT",
@@ -34,7 +39,6 @@ export async function POST(req: NextRequest) {
 
   res.cookies.set("next-auth.session-token", "", cookieOpts);
   res.cookies.set("__Secure-next-auth.session-token", "", cookieOpts);
-  res.cookies.set("role", "", cookieOpts);
 
   return res;
 }

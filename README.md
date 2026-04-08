@@ -107,7 +107,16 @@ npm run dev
 
 Buka [http://localhost:3000](http://localhost:3000) di browser.
 
-### 5. Build Production (Opsional)
+### 5. (Opsional) Jalankan Security Tests
+
+Untuk memverifikasi keamanan sistem:
+
+```bash
+# Di terminal baru (pastikan dev server running)
+node test-security.js
+```
+
+### 6. Build Production (Opsional)
 
 Untuk menjalankan versi production di lokal:
 ```bash
@@ -133,6 +142,54 @@ project-bem/
 ├── next.config.ts        # Konfigurasi Next.js
 └── package.json
 ```
+
+---
+
+##  Keamanan
+
+Project ini mengimplementasikan multiple layers of security untuk melindungi data mahasiswa dan operasional BEM:
+
+### Fitur Keamanan Utama
+
+- **JWT Authentication** dengan signature verification (HS256)
+- **Role-Based Access Control (RBAC)** dengan 4 tingkat akses
+- **HttpOnly Cookies** untuk mencegah XSS attacks
+- **Rate Limiting** pada login endpoints (max 10 requests/15 menit)
+- **Token-Based Admin Auth** dengan SHA-256 hashing
+- **Comprehensive Security Headers** (CSP, X-Frame-Options, HSTS, dll)
+- **API Route Protection** dengan middleware authentication
+- **Audit Logging** untuk semua aktivitas sensitif
+
+### Menjalankan Security Tests
+
+Untuk memverifikasi keamanan sistem setelah deployment atau modifikasi:
+
+```bash
+# Pastikan dev server sudah running
+npm run dev
+
+# Di terminal baru, jalankan security test suite
+node test-security.js
+
+# Untuk custom BASE_URL (misalnya testing production)
+BASE_URL=https://your-domain.com node test-security.js
+```
+
+Test suite akan mengecek:
+- ✓ Role cookie bypass prevention (CRITICAL)
+- ✓ API route protection
+- ✓ Rate limiting functionality
+- ✓ Security headers presence
+- ✓ JWT expiry handling
+- ✓ Cookie security attributes
+
+### Dokumentasi Keamanan Lengkap
+
+Lihat **[SECURITY.md](./SECURITY.md)** untuk:
+- Analisis kerentanan yang ditemukan & diperbaikan
+- Best practices keamanan yang diterapkan
+- Compliance dengan OWASP Top 10
+- Kontribusi untuk penelitian Tugas Akhir
 
 ---
 

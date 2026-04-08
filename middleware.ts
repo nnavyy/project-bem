@@ -49,13 +49,31 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // ── 1. Primary: verify JWT and extract role ─────────────────────────────
-  let role = await getRoleFromJwt(req);
+  const role = await getRoleFromJwt(req);
 
-  // ── 2. Fallback: plain role cookie (backward-compat only) ───────────────
-  //    Only used when there is no valid JWT so existing sessions during a
-  //    rolling migration are not immediately broken.
-  if (!role) {
-    role = req.cookies.get("role")?.value?.toLowerCase() ?? null;
+  // ── 2. Handle API routes (return JSON errors instead of redirects) ──────
+  if (pathname.startsWith("/api/")) {
+    // Public API routes that don't require authentication
+    const publicApiRoutes = ["/api/login/", "/api/health", "/api/public/"];
+    const isPublicRoute = publicApiRoutes.some((route) =>
+      pathname.startsWith(route),
+    );
+
+    if (isPublicRoute) {
+      return NextResponse.next();
+    }
+
+    // Protected API routes require valid JWT
+    if (!role) {
+      return NextResponse.json(
+        { error: "Unauthorized - Valid session required" },
+        { status: 401 },
+      );
+    }
+
+    // API route authorization can be added here if needed
+    // For now, any authenticated user can access protected API routes
+    return NextResponse.next();
   }
 
   // ── 3. No session at all → redirect to the appropriate login page ────────
@@ -102,5 +120,6 @@ export const config = {
     "/dashboard/admin/:path*",
     "/dashboard/headadmin/:path*",
     "/dashboard/superadmin/:path*",
+    "/api/:path*",
   ],
 };

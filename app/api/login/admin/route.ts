@@ -200,7 +200,12 @@ export async function POST(req: NextRequest) {
 
   const jwt = await signToken({
     id: admin.id,
-    role: admin.role === RoleAdmin.HEAD_ADMIN ? "HEAD_ADMIN" : admin.role === RoleAdmin.SUPER_ADMIN ? "SUPER_ADMIN" : "ADMIN",
+    role:
+      admin.role === RoleAdmin.HEAD_ADMIN
+        ? "HEAD_ADMIN"
+        : admin.role === RoleAdmin.SUPER_ADMIN
+          ? "SUPER_ADMIN"
+          : "ADMIN",
   });
 
   await logAktivitas({
@@ -235,16 +240,6 @@ export async function POST(req: NextRequest) {
   if (process.env.NODE_ENV === "production") {
     res.cookies.set("__Secure-next-auth.session-token", jwt, cookieOptions);
   }
-
-  const roleCookie =
-    admin.role === RoleAdmin.SUPER_ADMIN ? "superadmin" : admin.role === RoleAdmin.HEAD_ADMIN ? "headadmin" : "admin";
-  res.cookies.set("role", roleCookie, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24,
-  });
 
   return res;
 }

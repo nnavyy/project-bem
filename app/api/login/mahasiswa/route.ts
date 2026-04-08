@@ -92,10 +92,6 @@ export async function POST(req: NextRequest) {
     };
 
     res.cookies.set("next-auth.session-token", sessionToken, cookieOptions);
-    res.cookies.set("role", "mahasiswa", {
-      ...cookieOptions,
-      httpOnly: false, // role cookie perlu bisa dibaca JS untuk redirect di middleware fallback
-    });
 
     return res;
   } catch (err) {
