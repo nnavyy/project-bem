@@ -8,6 +8,18 @@ const secretValue =
   process.env.AUTH_SECRET ||
   process.env.JWT_SECRET ||
   "dev-only-secret-change-this";
+
+// SECURITY: Validate secret in production
+if (
+  process.env.NODE_ENV === "production" &&
+  secretValue === "dev-only-secret-change-this"
+) {
+  throw new Error(
+    "CRITICAL SECURITY ERROR: NEXTAUTH_SECRET must be set in production environment. " +
+      "Generate a strong secret with: openssl rand -base64 32",
+  );
+}
+
 const secret = new TextEncoder().encode(secretValue);
 
 // Rename biar gak bentrok dengan jose JWTPayload
@@ -89,7 +101,9 @@ export function hashToken(token: string): string {
  * Token ini ditampilkan SEKALI ke headadmin saat generate,
  * lalu tidak pernah disimpan dalam bentuk plain di DB.
  */
-export function generateAdminToken(role: "ADMIN" | "HEAD_ADMIN" | "SUPER_ADMIN"): string {
+export function generateAdminToken(
+  role: "ADMIN" | "HEAD_ADMIN" | "SUPER_ADMIN",
+): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const length = role === "ADMIN" ? 8 : 16;

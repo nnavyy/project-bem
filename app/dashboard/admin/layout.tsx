@@ -4,12 +4,24 @@ import { jwtVerify } from "jose";
 import type { ReactNode } from "react";
 import Sidebar from "./_components/Sidebar";
 
-const secret = new TextEncoder().encode(
+const secretValue =
   process.env.NEXTAUTH_SECRET ||
   process.env.AUTH_SECRET ||
   process.env.JWT_SECRET ||
-  "dev-only-secret-change-this",
-);
+  "dev-only-secret-change-this";
+
+// SECURITY: Validate secret in production
+if (
+  process.env.NODE_ENV === "production" &&
+  secretValue === "dev-only-secret-change-this"
+) {
+  throw new Error(
+    "CRITICAL SECURITY ERROR: NEXTAUTH_SECRET must be set in production environment. " +
+      "Generate a strong secret with: openssl rand -base64 32",
+  );
+}
+
+const secret = new TextEncoder().encode(secretValue);
 
 async function getSessionRole(): Promise<string | null> {
   try {

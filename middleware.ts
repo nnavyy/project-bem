@@ -2,12 +2,24 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(
+const secretValue =
   process.env.NEXTAUTH_SECRET ||
-    process.env.AUTH_SECRET ||
-    process.env.JWT_SECRET ||
-    "dev-only-secret-change-this",
-);
+  process.env.AUTH_SECRET ||
+  process.env.JWT_SECRET ||
+  "dev-only-secret-change-this";
+
+// 🔒 SECURITY: Validate secret in production
+if (
+  process.env.NODE_ENV === "production" &&
+  secretValue === "dev-only-secret-change-this"
+) {
+  throw new Error(
+    "CRITICAL SECURITY ERROR: NEXTAUTH_SECRET must be set in production environment. " +
+      "Generate a strong secret with: openssl rand -base64 32",
+  );
+}
+
+const secret = new TextEncoder().encode(secretValue);
 
 /** Maps JWT role enum values to the URL segment / cookie role strings. */
 const JWT_ROLE_MAP: Record<string, string> = {
