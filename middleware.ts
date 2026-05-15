@@ -65,17 +65,29 @@ export async function middleware(req: NextRequest) {
 
   // ── 2. Handle API routes (return JSON errors instead of redirects) ──────
   if (pathname.startsWith("/api/")) {
-    // Public API routes that don't require authentication
-    const publicApiRoutes = ["/api/login/", "/api/health", "/api/public/"];
+    // ── 2a. Fully public routes (no auth needed) ──────────────────────────
+    const publicApiRoutes = [
+      "/api/login/", // Login endpoints
+      "/api/chatbot", // Chatbot accessible dari public page
+      "/api/logout", // Logout handles own auth internally
+      "/api/health",
+      "/api/public/",
+    ];
     const isPublicRoute = publicApiRoutes.some((route) =>
       pathname.startsWith(route),
     );
+    if (isPublicRoute) return NextResponse.next();
 
-    if (isPublicRoute) {
-      return NextResponse.next();
-    }
+    // ── 2b. Semi-public routes: GET = public, mutasi = butuh auth ─────────
+    // Blog dan portofolio bisa dibaca tanpa login (public page),
+    // tapi POST/PUT/DELETE tetap dijaga oleh auth check di route handler.
+    const semiPublicGetRoutes = ["/api/blog", "/api/portofolio"];
+    const isSemiPublicGet =
+      req.method === "GET" &&
+      semiPublicGetRoutes.some((route) => pathname.startsWith(route));
+    if (isSemiPublicGet) return NextResponse.next();
 
-    // Protected API routes require valid JWT
+    // ── 2c. Semua route lain butuh JWT ────────────────────────────────────
     if (!role) {
       return NextResponse.json(
         { error: "Unauthorized - Valid session required" },
@@ -83,8 +95,6 @@ export async function middleware(req: NextRequest) {
       );
     }
 
-    // API route authorization can be added here if needed
-    // For now, any authenticated user can access protected API routes
     return NextResponse.next();
   }
 

@@ -269,7 +269,7 @@ function LightThemeBanner() {
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontWeight: 600, fontSize: "0.8125rem", color: "#92400e" }}>
-          🎨 Tema Terang — Beta
+           Tema Terang — Sedang Dalam Tahap Pengembangan
         </p>
         <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", lineHeight: 1.5, color: "#b45309" }}>
           Beberapa bagian tampilan mungkin belum sempurna. Kami sedang memperbaikinya. Gunakan <strong>Tema Gelap</strong> untuk pengalaman terbaik.
