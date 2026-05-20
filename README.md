@@ -25,6 +25,9 @@ Halaman informasi terbaru seputar kegiatan BEM — pengumuman, dokumentasi progr
 ### Portofolio BEM
 Dokumentasi program kerja dan divisi BEM ITESA sebagai bentuk transparansi organisasi kepada seluruh mahasiswa.
 
+### AI Chatbot Assistant
+Asisten virtual cerdas yang diintegrasikan menggunakan Groq API dan GPT API untuk membantu menjawab pertanyaan mahasiswa seputar informasi kampus, prosedur administrasi, dan layanan BEM secara otomatis 24/7.
+
 ### Admin Mode (Multi-Role)
 Sistem dashboard bertingkat dengan 4 level akses:
 - **Mahasiswa** → Bisa submit & cek status laporan
@@ -44,6 +47,7 @@ Sistem dashboard bertingkat dengan 4 level akses:
 | ORM | Prisma v6 |
 | Database | NeonDB (Serverless PostgreSQL) |
 | Auth | NextAuth v4 + JWT (jose) |
+| AI Integration | Groq API, GPT API |
 | Storage | Cloudinary |
 | Deploy | Vercel |
 
